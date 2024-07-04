@@ -2,19 +2,57 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+model BusStop {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique @db.VarChar(40)
+  description  String         @db.VarChar(150)
+  latitude     Decimal        @db.Decimal(7, 4)
+  longitude    Decimal        @db.Decimal(7, 4)
+  RouteBusStop RouteBusStop[]
 
-    @@index([name])
+  @@map("bus_stops")
+}
+
+model Route {
+  id       Int            @id @default(autoincrement())
+  name     String         @unique @db.VarChar(40)
+  History  RouteHistory[]
+  BusStops RouteBusStop[]
+
+  @@map("routes")
+}
+
+model RouteHistory {
+  id      Int   @id @default(autoincrement())
+  routeId Int
+  route   Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  data    Json?
+
+  @@index([routeId])
+  @@map("route_history")
+}
+
+model RouteBusStop {
+  id         Int     @id @default(autoincrement())
+  routeId    Int
+  route      Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  busStopId  Int
+  busStop    BusStop @relation(fields: [busStopId], references: [id])
+  order      Int
+  distance   Int?
+  travelTime Int?
+  geoPoints  Json?
+
+  @@unique([routeId, busStopId])
+  @@index([routeId])
+  @@index([busStopId])
+  @@map("route_bus_stops")
 }
