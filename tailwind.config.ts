@@ -8,6 +8,9 @@ export default {
       fontFamily: {
         sans: ["var(--font-geist-sans)", ...fontFamily.sans],
       },
+      screens: {
+        xs: "500px",
+      },
     },
   },
   plugins: [],
