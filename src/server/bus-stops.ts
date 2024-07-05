@@ -1,4 +1,4 @@
-import { type BusStop as PrismaBusStop, type Prisma } from "@prisma/client";
+import { type Prisma, type BusStop as PrismaBusStop } from "@prisma/client";
 import { db } from "app/server/db";
 import { z } from "zod";
 
@@ -57,7 +57,7 @@ const getList = async (q: BusStopQuery): Promise<BusStop[]> => {
   );
 };
 
-const getById = async (id: number): Promise<BusStop | null> => {
+const getById = async (id: number): Promise<BusStop> => {
   return toBusStop(await db.busStop.findUniqueOrThrow({ where: { id } }));
 };
 
@@ -73,6 +73,7 @@ const exports = {
   getList,
   getById,
   deleteById,
+  toBusStop,
 };
 
 export default exports;

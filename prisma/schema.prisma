@@ -22,10 +22,10 @@ model BusStop {
 }
 
 model Route {
-  id       Int            @id @default(autoincrement())
-  name     String         @unique @db.VarChar(40)
-  History  RouteHistory[]
-  BusStops RouteBusStop[]
+  id            Int            @id @default(autoincrement())
+  name          String         @unique @db.VarChar(40)
+  history       RouteHistory[]
+  routeBusStops RouteBusStop[]
 
   @@map("routes")
 }
