@@ -8,7 +8,7 @@ import ModalConfirm, {
 import { useDataStore } from "app/contexts/DataStore";
 import { useUiController } from "app/contexts/UIController";
 import { type BusStop } from "app/server/bus-stops";
-import { type Route } from "app/server/routes";
+import { type Route, type RouteWithData } from "app/server/routes";
 import { type Mode } from "app/types/client";
 import cn from "classnames";
 import React, { useEffect, useState } from "react";
@@ -69,6 +69,20 @@ const SideBar: React.FC = () => {
     });
   };
 
+  const onDeleteRoute = async (route: RouteWithData) => {
+    setDeleteModal({
+      confirmText: "Delete",
+      description: `Are you sure you want to delete route "${route.name}"`,
+      title: "Delete Route",
+      onCancel: () => setDeleteModal(undefined),
+      onConfirm: async () => {
+        setActiveItem(undefined);
+        await dataStore.deleteRoute(route.id);
+        setDeleteModal(undefined);
+      },
+    });
+  };
+
   useEffect(() => {
     if (ui.mode !== "busStops") {
       return;
@@ -105,7 +119,14 @@ const SideBar: React.FC = () => {
           dataStore.toggleRouteIdx(idx);
           setActiveItem((old) => (old === idx ? undefined : old));
         },
-        actions: {},
+        actions: {
+          edit: async () =>
+            dataStore.setRouteForm({
+              id: route.id,
+              name: route.name,
+            }),
+          delete: async () => onDeleteRoute(route),
+        },
       });
     });
     setConfig(newConfig);

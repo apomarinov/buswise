@@ -293,12 +293,10 @@ const recalculateMovedBusStopRoute = async (
       const moved = route.routeBusStops[j]!;
       if (moved.busStopId === busStopId) {
         if (j > 0) {
-          console.log("gound", busStopId);
           const previous = route.routeBusStops[j - 1]!;
           await updateBusStopRoute(moved.id, previous.busStop, moved.busStop);
         }
         if (j < route.routeBusStops.length) {
-          console.log("gound 1", busStopId);
           const next = route.routeBusStops[j + 1]!;
           await updateBusStopRoute(next.id, moved.busStop, next.busStop);
         }

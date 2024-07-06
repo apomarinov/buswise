@@ -54,6 +54,7 @@ const Dashboard: React.FC = () => {
                 data.id as number,
                 dataStore.selectedBusStop.id,
               );
+              dataStore.setSelectedRouteIdx(0);
             } else {
               void dataStore.fetchRoutes();
             }
