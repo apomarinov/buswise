@@ -15,10 +15,13 @@ const Dashboard: React.FC = () => {
         <ModalForm
           apiUrl="/bus-stop"
           data={dataStore.busStopForm}
-          config={[{ field: "name" }, { field: "description" }]}
+          fields={["name", "description"]}
           title="Bus Stop"
           onClose={() => dataStore.setBusStopForm()}
-          onSave={() => dataStore.setBusStopForm()}
+          onSave={() => {
+            dataStore.setBusStopForm();
+            void dataStore.fetchBusStops();
+          }}
         />
       )}
       {ui.showSideBar && <SideBar />}

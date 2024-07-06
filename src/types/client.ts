@@ -11,3 +11,5 @@ export interface ApiResponse<T> {
 export type StringMap = { [k in string]: string };
 
 export type FormDataMap = { [k in string]: string | number };
+
+export type Mode = "busStops" | "routes";

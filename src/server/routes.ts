@@ -241,6 +241,15 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
   }
 };
 
+const getByBusStopId = async (busStopId: number): Promise<Route[]> => {
+  return (
+    await db.routeBusStop.findMany({
+      where: { busStopId },
+      include: { route: true },
+    })
+  ).map((b) => b.route);
+};
+
 const exports = {
   schema,
   schemaRouteBusStopQuery,
@@ -253,6 +262,7 @@ const exports = {
   addBusStop,
   removeBusStop,
   reorderBusStop,
+  getByBusStopId,
 };
 
 export default exports;

@@ -1,9 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { handler } from "app/server/handler";
-import validate from "app/server/validate";
 import busStops, { type BusStop } from "app/server/bus-stops";
-import { z } from "zod";
+import { handler } from "app/server/handler";
 import response from "app/server/response";
+import validate from "app/server/validate";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { z } from "zod";
 
 export default handler(async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "PUT") {

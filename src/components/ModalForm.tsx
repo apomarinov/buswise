@@ -16,23 +16,22 @@ type Props = {
   title: string;
   apiUrl: string;
   data?: FormDataMap;
-  config: {
-    field: string;
-    value?: string;
-  }[];
+  fields: string[];
   onClose?: () => void;
   onSave?: (data: FormDataMap) => void;
 };
 
 const ModalForm: React.FC<Props> = ({
   apiUrl,
-  config,
+  fields,
   title,
   data,
   onClose = () => 1,
   onSave = (data: FormDataMap) => 1,
 }) => {
-  const [form, setForm] = useState(config);
+  const [form, setForm] = useState(
+    fields.map((field) => ({ field, value: data?.[field] ?? "" })),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<StringMap>({});
 
@@ -52,7 +51,7 @@ const ModalForm: React.FC<Props> = ({
     }
 
     const res = await api(url, {
-      method: "POST",
+      method: data?.id ? "PUT" : "POST",
       body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
@@ -82,7 +81,7 @@ const ModalForm: React.FC<Props> = ({
   }
 
   return (
-    <Modal isOpen onClose={onClose} closeOnOverlayClick={!isLoading}>
+    <Modal isOpen onClose={onClose} closeOnOverlayClick={!isLoading} isCentered>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>{formTitle}</ModalHeader>
