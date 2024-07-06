@@ -233,7 +233,9 @@ const Map: React.FC = () => {
         {dataStore.busStops.map((busStop, idx) => (
           <MarkerBusStop
             key={idx + renderSeed}
-            isFirstStopInRoute={!!dataStore.routeFirstStops[busStop.id]}
+            isFirstStopInRoute={
+              !!dataStore.routeFirstStops[busStop.id] && ui.mode === "routes"
+            }
             isSelected={dataStore.selectedBusStopIdx === idx}
             lat={busStop.latitude}
             lng={busStop.longitude}
