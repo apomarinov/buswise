@@ -60,7 +60,6 @@ const Map: React.FC = () => {
   const ui = useUiController();
   const [map, setMap] = useState<google.maps.Map>();
   const [isDragging, setIsDragging] = useState(false);
-  const [updateBusStop, setUpdateBusStop] = useState<BusStop>();
   const [mapConfirm, setMapConfirm] = useState<MapUiConfirmProps>();
   const [renderSeed, setRenderSeed] = useState(0);
   const [routePaths, setRoutePaths] = useState<google.maps.Polyline[]>([]);
@@ -173,6 +172,13 @@ const Map: React.FC = () => {
     });
   };
 
+  const saveStop = (busStop: BusStop) => {
+    void dataStore.updateBusStop(busStop).then((r) => {
+      setMapConfirm(undefined);
+      void dataStore.fetchRoutes();
+    });
+  };
+
   const onBusStopDrag: MarkerBusStopProps["onDrag"] = (e, { latLng }) => {
     if (!isDragging) {
       setIsDragging(true);
@@ -185,18 +191,17 @@ const Map: React.FC = () => {
     return (e, { latLng }) => {
       setIsDragging((old) => {
         if (old) {
-          setUpdateBusStop({
-            ...busStop,
-            latitude: latLng.lat,
-            longitude: latLng.lng,
-          });
           setMapConfirm({
             text: `Save "${busStop.name}" location`,
             isLoading: false,
-            onConfirm: saveStop,
+            onConfirm: () =>
+              saveStop({
+                ...busStop,
+                latitude: latLng.lat,
+                longitude: latLng.lng,
+              }),
             onCancel: () => {
               setRenderSeed((old) => old + 1);
-              setUpdateBusStop(undefined);
               setMapConfirm(undefined);
             },
           });
@@ -204,13 +209,6 @@ const Map: React.FC = () => {
         return old;
       });
     };
-  };
-
-  const saveStop = () => {
-    void dataStore.updateBusStop(updateBusStop!).then((r) => {
-      setUpdateBusStop(undefined);
-      setMapConfirm(undefined);
-    });
   };
 
   return (

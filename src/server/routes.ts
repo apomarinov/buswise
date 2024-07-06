@@ -1,9 +1,13 @@
-import { Prisma, type PrismaClient, type RouteBusStop } from "@prisma/client";
+import {
+  type Prisma,
+  type BusStop as PrismaBusStop,
+  type PrismaClient,
+  type RouteBusStop,
+} from "@prisma/client";
 import busStops, { type BusStop } from "app/server/bus-stops";
 import { db } from "app/server/db";
 import googleRoutes from "app/server/external/google-routes";
 import { z } from "zod";
-import RouteBusStopUncheckedCreateInput = Prisma.RouteBusStopUncheckedCreateInput;
 
 const schema = z
   .object({
@@ -67,7 +71,7 @@ const addBusStop = async (data: RouteBusStopQuery): Promise<RouteBusStop> => {
     throw new Error("Bus stop already added to route");
   }
 
-  const newRouteBusStop: RouteBusStopUncheckedCreateInput = {
+  const newRouteBusStop: Prisma.RouteBusStopUncheckedCreateInput = {
     routeId: data.routeId,
     busStopId: newBusStop.id,
     order: route.routeBusStops.length + 1,
@@ -150,6 +154,25 @@ const removeBusStop = async (data: RouteBusStopQuery): Promise<void> => {
   });
 };
 
+const updateBusStopRoute = async (
+  routeBusStopId: number,
+  from: PrismaBusStop,
+  to: PrismaBusStop,
+): Promise<void> => {
+  const routeInfo = await googleRoutes.getRoute(
+    busStops.toBusStop(from),
+    busStops.toBusStop(to),
+  );
+  await db.routeBusStop.update({
+    where: { id: routeBusStopId },
+    data: {
+      distance: routeInfo.distance,
+      travelTime: routeInfo.travelTime,
+      geoPoints: routeInfo.geoPoints,
+    },
+  });
+};
+
 const schemaReorderBusStops = z.object({
   routeId: z.coerce.number().min(1),
   from: z.number().min(1),
@@ -221,18 +244,11 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
       where: { routeId: data.routeId, order: updateBusStop.order - 1 },
       include: { busStop: true },
     });
-    const routeInfo = await googleRoutes.getRoute(
-      busStops.toBusStop(previousStop.busStop),
-      busStops.toBusStop(updateBusStop.busStop),
+    await updateBusStopRoute(
+      updateBusStop.id,
+      previousStop.busStop,
+      updateBusStop.busStop,
     );
-    await db.routeBusStop.update({
-      where: { id: updateBusStop.id },
-      data: {
-        distance: routeInfo.distance,
-        travelTime: routeInfo.travelTime,
-        geoPoints: routeInfo.geoPoints,
-      },
-    });
   }
 
   // update the new first bus stop
@@ -258,6 +274,35 @@ const getByBusStopId = async (busStopId: number): Promise<Route[]> => {
   ).map((b) => b.route);
 };
 
+const recalculateMovedBusStopRoute = async (
+  busStopId: number,
+): Promise<void> => {
+  const routes = await db.route.findMany({
+    where: {
+      routeBusStops: { some: { busStopId } },
+    },
+    include: {
+      routeBusStops: { include: { busStop: true } },
+    },
+  });
+
+  for (const route of routes) {
+    for (let j = 0; j < route.routeBusStops.length; j++) {
+      const moved = route.routeBusStops[j]!;
+      if (moved.busStopId === busStopId) {
+        if (j > 0) {
+          const previous = route.routeBusStops[j - 1]!;
+          await updateBusStopRoute(moved.id, previous.busStop, moved.busStop);
+        }
+        if (j < route.routeBusStops.length) {
+          const next = route.routeBusStops[j + 1]!;
+          await updateBusStopRoute(next.id, moved.busStop, next.busStop);
+        }
+      }
+    }
+  }
+};
+
 const exports = {
   schema,
   schemaRouteBusStopQuery,
@@ -271,6 +316,7 @@ const exports = {
   removeBusStop,
   reorderBusStop,
   getByBusStopId,
+  recalculateMovedBusStopRoute,
 };
 
 export default exports;
