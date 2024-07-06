@@ -7,10 +7,10 @@ const success = (res: NextApiResponse, data?: unknown) => {
 const error = (
   res: NextApiResponse,
   message: string,
-  errors?: unknown[],
+  validation?: unknown[],
   code = 400,
 ) => {
-  res.status(code).json({ message, errors, success: false });
+  res.status(code).json({ message, validation, success: false });
 };
 
 const exports = {

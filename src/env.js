@@ -21,6 +21,7 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_GOOGLE_API_KEY: z.string(),
+    NEXT_PUBLIC_PUBLIC_URL: z.string().url().default("http://localhost:3000"),
   },
 
   /**
@@ -32,6 +33,7 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
     NEXT_PUBLIC_GOOGLE_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
+    NEXT_PUBLIC_PUBLIC_URL: process.env.NEXT_PUBLIC_PUBLIC_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -1,10 +1,16 @@
 import { Status, Wrapper } from "@googlemaps/react-wrapper";
+import { useDataStore } from "app/contexts/DataStore";
 import { env } from "app/env";
 import React, { useEffect, useRef, useState } from "react";
 
-const Map: React.FC = () => {
+type Props = {
+  mode: "busStops" | "routes";
+};
+
+const Map: React.FC<Props> = ({ mode }) => {
+  const dataStore = useDataStore();
   const ref = useRef<HTMLDivElement>(null);
-  const [loadedApi, setLoadedApi] = useState<boolean>(false);
+  const [loadedApi, setLoadedApi] = useState(false);
   const [map, setMap] = useState<google.maps.Map>();
 
   useEffect(() => {
@@ -22,6 +28,8 @@ const Map: React.FC = () => {
       fullscreenControl: false,
       streetViewControl: false,
       zoomControl: false,
+      disableDoubleClickZoom: true,
+      clickableIcons: false,
       gestureHandling: "greedy",
       mapId: "map",
       mapTypeControlOptions: {
@@ -31,6 +39,29 @@ const Map: React.FC = () => {
 
     setMap(newMap);
   }, [loadedApi, ref.current]);
+
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+    const listeners: google.maps.MapsEventListener[] = [];
+    listeners.push(
+      map.addListener("click", (e) => {
+        if (mode === "busStops") {
+          dataStore.setBusStopForm({
+            id: 0,
+            name: "",
+            description: "",
+            latitude: e.latLng.lat(),
+            longitude: e.latLng.lng(),
+          });
+        }
+      }),
+    );
+    return () => {
+      listeners.forEach((l) => l?.remove());
+    };
+  }, [map, mode]);
 
   return (
     <div className="flex flex-grow flex-col bg-blue-100 max-sm:w-full">
