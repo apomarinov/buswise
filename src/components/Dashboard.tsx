@@ -1,5 +1,5 @@
-import Map from "app/components/Map";
-import ModalForm from "app/components/ModalForm";
+import Map from "app/components/map/Map";
+import ModalForm from "app/components/modal/ModalForm";
 import SideBar from "app/components/SideBar";
 import { useDataStore } from "app/contexts/DataStore";
 import { useUiController } from "app/contexts/UIController";
@@ -10,7 +10,7 @@ const Dashboard: React.FC = () => {
   const dataStore = useDataStore();
 
   return (
-    <div className="w-full h-full flex relative">
+    <div className="w-full h-full overflow-hidden flex relative">
       {dataStore.busStopForm && (
         <ModalForm
           apiUrl="/bus-stop"
@@ -21,7 +21,6 @@ const Dashboard: React.FC = () => {
           onSave={() => {
             dataStore.setBusStopForm();
             void dataStore.fetchBusStops();
-            dataStore.setSelectedBusStopIdx(0);
           }}
         />
       )}

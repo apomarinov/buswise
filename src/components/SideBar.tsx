@@ -4,7 +4,7 @@ import Delete from "app/components/Icons/Delete";
 import Edit from "app/components/Icons/Edit";
 import ModalConfirm, {
   type ModalConfirmProps,
-} from "app/components/ModalConfirm";
+} from "app/components/modal/ModalConfirm";
 import { useDataStore } from "app/contexts/DataStore";
 import { useUiController } from "app/contexts/UIController";
 import { type BusStop } from "app/server/bus-stops";
@@ -64,7 +64,7 @@ const SideBar: React.FC = () => {
       title: "Delete Bus Stop",
       onCancel: () => setDeleteModal(undefined),
       onConfirm: async () => {
-        setActiveItem();
+        setActiveItem(undefined);
         await dataStore.deleteBusStop(busStop.id);
         setDeleteModal(undefined);
       },
@@ -106,7 +106,7 @@ const SideBar: React.FC = () => {
       {deleteModal && (
         <ModalConfirm {...deleteModal} isLoading={dataStore.isLoading} />
       )}
-      <div className="flex w-full h-11">
+      <div className="flex w-full min-h-8 h-11">
         {tabs.map((tab, idx) => (
           <span
             key={idx}
@@ -120,7 +120,7 @@ const SideBar: React.FC = () => {
           </span>
         ))}
       </div>
-      <div className="w-full h-full flex flex-col gap-2 p-2">
+      <div className="w-full h-full flex flex-col gap-2 p-2 overflow-y-auto">
         {emptyMessage && (
           <div className="m-auto text-center font-semibold text-sm mx-4">
             {emptyMessage}
@@ -131,7 +131,7 @@ const SideBar: React.FC = () => {
             key={idx}
             size="sm"
             className={cn(
-              "!text-gray-700 !font-normal !flex !justify-between !px-2",
+              "!text-gray-700 !font-normal !flex !justify-between !px-2 min-h-9",
               activeItem === idx && "!font-semibold !text-gray-800",
             )}
             isActive={activeItem === idx}
@@ -143,7 +143,15 @@ const SideBar: React.FC = () => {
                 {Object.keys(cfg.actions).map((key, aIdx) => {
                   const action = key as SideBarItemActionType;
                   const Icon = ActionIcons[action];
-                  return <Icon key={aIdx} onClick={cfg.actions[action]} />;
+                  return (
+                    <Icon
+                      key={aIdx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void cfg.actions[action]?.();
+                      }}
+                    />
+                  );
                 })}
               </div>
             )}

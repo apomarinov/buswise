@@ -7,7 +7,7 @@ import React from "react";
 const NavBar: React.FC = () => {
   const ui = useUiController();
   return (
-    <div className="w-full bg-white drop-shadow-sm h-12 px-4 flex items-center justify-between z-10">
+    <div className="w-full bg-white drop-shadow-sm h-12 py-1 px-4 flex items-center justify-between z-10">
       <div className="slide-in-blurred-left">
         <Logo />
       </div>

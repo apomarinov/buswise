@@ -14,8 +14,8 @@ model BusStop {
   id           Int            @id @default(autoincrement())
   name         String         @unique @db.VarChar(40)
   description  String         @db.VarChar(150)
-  latitude     Decimal        @db.Decimal(7, 4)
-  longitude    Decimal        @db.Decimal(7, 4)
+  latitude     Decimal        @db.Decimal(10, 7)
+  longitude    Decimal        @db.Decimal(10, 7)
   RouteBusStop RouteBusStop[]
 
   @@map("bus_stops")

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "bus_stops" ALTER COLUMN "latitude" SET DATA TYPE DECIMAL(10,7),
+ALTER COLUMN "longitude" SET DATA TYPE DECIMAL(10,7);

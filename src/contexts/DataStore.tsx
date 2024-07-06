@@ -14,6 +14,7 @@ type DataStoreContext = {
   setSelectedBusStopIdx: (idx?: number) => void;
   selectedBusStop?: BusStop;
   deleteBusStop: (id: number) => Promise<void>;
+  updateBusStop: (busStop: BusStop) => Promise<void>;
 };
 
 const Context = React.createContext<DataStoreContext>({
@@ -28,6 +29,7 @@ const Context = React.createContext<DataStoreContext>({
   setSelectedBusStopIdx: (idx?: number) => true,
   selectedBusStop: undefined,
   deleteBusStop: (id: number) => Promise.resolve(),
+  updateBusStop: (busStop: BusStop) => Promise.resolve(),
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -53,6 +55,19 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setIsLoading(false);
   };
 
+  const updateBusStop = async (busStop: BusStop) => {
+    setIsLoading(true);
+    await api(`/bus-stop/${busStop.id}`, {
+      method: "PUT",
+      body: JSON.stringify(busStop),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    await fetchBusStops();
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     void fetchBusStops();
   }, []);
@@ -74,6 +89,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         setSelectedBusStopIdx,
         selectedBusStop,
         deleteBusStop,
+        updateBusStop,
       }}
     >
       {children}
