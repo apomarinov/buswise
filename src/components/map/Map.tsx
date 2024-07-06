@@ -7,7 +7,7 @@ import MarkerBusStop, {
 import { useDataStore } from "app/contexts/DataStore";
 import { useUiController } from "app/contexts/UIController";
 import { env } from "app/env";
-import { md5, sumCharactersToNumber } from "app/helpers/string";
+import { colorFromString } from "app/helpers/string";
 import { type BusStop } from "app/server/bus-stops";
 import GoogleMap, {
   type LatLngLiteral,
@@ -112,12 +112,11 @@ const Map: React.FC = () => {
           })),
         );
       });
-      const colorFromRouteName = `hsl(${sumCharactersToNumber(md5(route.name)) % 360}, 70%, 60%)`;
       const line = new google.maps.Polyline({
         path,
         map,
         geodesic: true,
-        strokeColor: colorFromRouteName,
+        strokeColor: colorFromString(route.name),
         strokeOpacity: 1.0,
         strokeWeight: dataStore.selectedRouteIdx === idx ? 7 : 4,
         zIndex: dataStore.selectedRouteIdx === idx ? 2 : 0,
@@ -234,6 +233,7 @@ const Map: React.FC = () => {
         {dataStore.busStops.map((busStop, idx) => (
           <MarkerBusStop
             key={idx + renderSeed}
+            isFirstStopInRoute={!!dataStore.routeFirstStops[busStop.id]}
             isSelected={dataStore.selectedBusStopIdx === idx}
             lat={busStop.latitude}
             lng={busStop.longitude}

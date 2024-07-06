@@ -27,6 +27,7 @@ type DataStoreContext = {
   routeForm?: RouteForm;
   setRouteForm: (route?: RouteForm) => void;
   addBusStopToRoute: (routeId: number, busStopId: number) => Promise<void>;
+  routeFirstStops: { [k in string]: number };
 };
 
 const Context = React.createContext<DataStoreContext>({
@@ -52,6 +53,7 @@ const Context = React.createContext<DataStoreContext>({
   routeForm: undefined,
   setRouteForm: (route?: RouteForm) => true,
   addBusStopToRoute: (routeId: number, busStopId: number) => Promise.resolve(),
+  routeFirstStops: {},
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -65,6 +67,9 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   const [selectedBusStopIdx, setSelectedBusStopIdx] = useState<number>();
   const [selectedRouteIdx, setSelectedRouteIdx] = useState<number>();
   const [routeForm, setRouteForm] = useState<RouteForm>();
+  const [routeFirstStops, setRouteFirstStops] = useState<
+    DataStoreContext["routeFirstStops"]
+  >({});
 
   const fetchBusStops = async () => {
     setIsLoading(true);
@@ -97,7 +102,16 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setIsLoading(true);
     const res = await api<RouteWithData[]>("/route", { method: "GET" });
     setIsLoading(false);
-    setRoutes(res.data ?? []);
+    const data = res.data ?? [];
+    setRoutes(data);
+    setRouteFirstStops(
+      data.reduce((prev, curr) => {
+        if (curr.routeBusStops?.[0]?.busStop.id) {
+          prev[curr.routeBusStops[0].busStop.id] = curr.name;
+        }
+        return prev;
+      }, {} as any),
+    );
   };
 
   const addBusStopToRoute = async (routeId: number, busStopId: number) => {
@@ -155,6 +169,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         routeForm,
         setRouteForm,
         addBusStopToRoute,
+        routeFirstStops,
       }}
     >
       {children}
