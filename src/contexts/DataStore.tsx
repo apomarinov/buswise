@@ -8,8 +8,9 @@ type DataStoreContext = {
   isLoading: boolean;
   busStopForm?: BusStop;
   setBusStopForm: (busStop?: BusStop) => void;
-  fetchBusStops: () => Promise<void>;
+  fetchBusStops: (setActiveId?: number) => Promise<void>;
   busStops: BusStop[];
+  selectedBusStopIdx?: number;
   setSelectedBusStopIdx: (idx?: number) => void;
   selectedBusStop?: BusStop;
   deleteBusStop: (id: number) => Promise<void>;
@@ -23,6 +24,7 @@ const Context = React.createContext<DataStoreContext>({
   setBusStopForm: (busStop?: BusStop) => true,
   fetchBusStops: () => Promise.resolve(),
   busStops: [],
+  selectedBusStopIdx: undefined,
   setSelectedBusStopIdx: (idx?: number) => true,
   selectedBusStop: undefined,
   deleteBusStop: (id: number) => Promise.resolve(),
@@ -68,6 +70,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         fetchBusStops,
         busStops,
         isLoading,
+        selectedBusStopIdx,
         setSelectedBusStopIdx,
         selectedBusStop,
         deleteBusStop,

@@ -21,6 +21,7 @@ const Dashboard: React.FC = () => {
           onSave={() => {
             dataStore.setBusStopForm();
             void dataStore.fetchBusStops();
+            dataStore.setSelectedBusStopIdx(0);
           }}
         />
       )}

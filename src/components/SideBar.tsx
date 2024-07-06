@@ -37,6 +37,7 @@ const SideBar: React.FC = () => {
   const modes: Mode[] = ["busStops", "routes"];
   const [config, setConfig] = useState<SideBarItem[]>([]);
   const [activeItem, setActiveItem] = useState<number>();
+  const [emptyMessage, setEmptyMessage] = useState("");
   const [deleteModal, setDeleteModal] = useState<ModalConfirmProps>();
 
   const changeMode = async (mode: Mode) => {
@@ -63,6 +64,7 @@ const SideBar: React.FC = () => {
       title: "Delete Bus Stop",
       onCancel: () => setDeleteModal(undefined),
       onConfirm: async () => {
+        setActiveItem();
         await dataStore.deleteBusStop(busStop.id);
         setDeleteModal(undefined);
       },
@@ -85,7 +87,16 @@ const SideBar: React.FC = () => {
       });
     });
     setConfig(newConfig);
+    setEmptyMessage(
+      !newConfig.length ? "Click on the map to add a new bus stop" : "",
+    );
   }, [dataStore.busStops]);
+
+  useEffect(() => {
+    if (dataStore.selectedBusStopIdx !== undefined) {
+      setActiveItem(dataStore.selectedBusStopIdx);
+    }
+  }, [dataStore.selectedBusStopIdx]);
 
   return (
     <div className="flex relative drop-shadow-md flex-col bg-white max-w-[25%] min-w-[200px] max-sm:min-w-full max-sm:absolute top-0 left-0 max-sm:h-full z-[2]">
@@ -110,6 +121,11 @@ const SideBar: React.FC = () => {
         ))}
       </div>
       <div className="w-full h-full flex flex-col gap-2 p-2">
+        {emptyMessage && (
+          <div className="m-auto text-center font-semibold text-sm mx-4">
+            {emptyMessage}
+          </div>
+        )}
         {config.map((cfg, idx) => (
           <Button
             key={idx}
