@@ -42,11 +42,9 @@ const SideBar: React.FC = () => {
 
   const changeMode = async (mode: Mode) => {
     ui.setMode(mode);
-    switch (mode) {
-      case "busStops":
-        void dataStore.fetchBusStops();
-        break;
-    }
+    setActiveItem(undefined);
+    dataStore.setSelectedBusStopIdx();
+    dataStore.setSelectedRouteIdx();
   };
 
   const onDeleteBusStop = async (busStop: BusStop) => {
@@ -72,13 +70,16 @@ const SideBar: React.FC = () => {
   };
 
   useEffect(() => {
+    if (ui.mode !== "busStops") {
+      return;
+    }
     const newConfig: SideBarItem[] = [];
     dataStore.busStops.forEach((busStop, idx) => {
       newConfig.push({
         name: busStop.name,
         onClick: () => {
-          dataStore.setSelectedBusStopIdx(idx);
-          setActiveItem(idx);
+          dataStore.toggleBusStopIdx(idx);
+          setActiveItem((old) => (old === idx ? undefined : old));
         },
         actions: {
           edit: async () => dataStore.setBusStopForm(busStop),
@@ -90,13 +91,42 @@ const SideBar: React.FC = () => {
     setEmptyMessage(
       !newConfig.length ? "Click on the map to add a new bus stop" : "",
     );
-  }, [dataStore.busStops]);
+  }, [dataStore.busStops, ui.mode]);
+
+  useEffect(() => {
+    if (ui.mode !== "routes") {
+      return;
+    }
+    const newConfig: SideBarItem[] = [];
+    dataStore.routes.forEach((route, idx) => {
+      newConfig.push({
+        name: route.name,
+        onClick: () => {
+          dataStore.toggleRouteIdx(idx);
+          setActiveItem((old) => (old === idx ? undefined : old));
+        },
+        actions: {},
+      });
+    });
+    setConfig(newConfig);
+    let message = "";
+    if (!newConfig.length && !dataStore.busStops.length) {
+      message = "Click on the map to add a new bus stop";
+    }
+    if (!newConfig.length && dataStore.busStops.length) {
+      message = "Select a bus stop to create a route";
+    }
+    setEmptyMessage(message);
+  }, [dataStore.routes, ui.mode, dataStore.busStops]);
 
   useEffect(() => {
     if (dataStore.selectedBusStopIdx !== undefined) {
       setActiveItem(dataStore.selectedBusStopIdx);
     }
-  }, [dataStore.selectedBusStopIdx]);
+    if (dataStore.selectedRouteIdx !== undefined) {
+      setActiveItem(dataStore.selectedRouteIdx);
+    }
+  }, [dataStore.selectedBusStopIdx, dataStore.selectedRouteIdx]);
 
   return (
     <div className="flex relative drop-shadow-md flex-col bg-white max-w-[25%] min-w-[200px] max-sm:min-w-full max-sm:absolute top-0 left-0 max-sm:h-full z-[2]">
@@ -128,7 +158,7 @@ const SideBar: React.FC = () => {
         )}
         {config.map((cfg, idx) => (
           <Button
-            key={idx}
+            key={idx + ui.mode}
             size="sm"
             className={cn(
               "!text-gray-700 !font-normal !flex !justify-between !px-2 min-h-9",

@@ -15,10 +15,11 @@ import React, { useState } from "react";
 type Props = {
   title: string;
   apiUrl: string;
+  replaceTitle?: boolean;
   data?: FormDataMap;
   fields: string[];
   onClose?: () => void;
-  onSave?: (data: FormDataMap) => void;
+  onSave?: (data: FormDataMap, isNew: boolean) => void;
 };
 
 const ModalForm: React.FC<Props> = ({
@@ -27,7 +28,8 @@ const ModalForm: React.FC<Props> = ({
   title,
   data,
   onClose = () => 1,
-  onSave = (data: FormDataMap) => 1,
+  onSave = (data: FormDataMap, isNew: boolean) => 1,
+  replaceTitle,
 }) => {
   const [form, setForm] = useState(
     fields.map((field) => ({ field, value: data?.[field] ?? "" })),
@@ -67,17 +69,32 @@ const ModalForm: React.FC<Props> = ({
 
     if (res.success) {
       onClose?.();
-      onSave?.(res.data as FormDataMap);
+      onSave?.(res.data as FormDataMap, !data?.id);
     } else if (!res.validation) {
       setErrors({ _error: res.message });
     }
   };
 
-  let formTitle = "";
-  if (data?.id) {
-    formTitle = `Edit ${title}`;
-  } else {
-    formTitle = `New ${title}`;
+  const onInputChange = (value: string, idx: number, field: string) => {
+    if (form[idx]) {
+      form[idx].value = value;
+      setForm([...form]);
+      if (value.length) {
+        setErrors((old) => {
+          delete old[field];
+          return { ...old };
+        });
+      }
+    }
+  };
+
+  let formTitle = title;
+  if (!replaceTitle) {
+    if (data?.id) {
+      formTitle = `Edit ${title}`;
+    } else {
+      formTitle = `New ${title}`;
+    }
   }
 
   return (
@@ -97,12 +114,9 @@ const ModalForm: React.FC<Props> = ({
                   autoFocus={idx === 0}
                   size="md"
                   value={item.value ?? ""}
-                  onChange={(e) => {
-                    if (form[idx]) {
-                      form[idx].value = e.target.value;
-                      setForm([...form]);
-                    }
-                  }}
+                  onChange={(e) =>
+                    onInputChange(e.target.value, idx, item.field)
+                  }
                 />
                 {errors[item.field] && (
                   <p className="font-semibold text-red-400 text-xs">

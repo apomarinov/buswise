@@ -1,5 +1,7 @@
 import { api } from "app/api";
 import { type BusStop } from "app/server/bus-stops";
+import { type RouteWithData } from "app/server/routes";
+import { type RouteForm } from "app/types/client";
 import React, { useEffect, useState, type PropsWithChildren } from "react";
 
 type DataStoreContext = {
@@ -12,9 +14,19 @@ type DataStoreContext = {
   busStops: BusStop[];
   selectedBusStopIdx?: number;
   setSelectedBusStopIdx: (idx?: number) => void;
+  toggleBusStopIdx: (idx?: number) => void;
   selectedBusStop?: BusStop;
   deleteBusStop: (id: number) => Promise<void>;
   updateBusStop: (busStop: BusStop) => Promise<void>;
+  routes: RouteWithData[];
+  fetchRoutes: () => Promise<void>;
+  selectedRouteIdx?: number;
+  setSelectedRouteIdx: (idx?: number) => void;
+  toggleRouteIdx: (idx?: number) => void;
+  selectedRoute?: RouteWithData;
+  routeForm?: RouteForm;
+  setRouteForm: (route?: RouteForm) => void;
+  addBusStopToRoute: (routeId: number, busStopId: number) => Promise<void>;
 };
 
 const Context = React.createContext<DataStoreContext>({
@@ -27,9 +39,19 @@ const Context = React.createContext<DataStoreContext>({
   busStops: [],
   selectedBusStopIdx: undefined,
   setSelectedBusStopIdx: (idx?: number) => true,
+  toggleBusStopIdx: (idx?: number) => true,
   selectedBusStop: undefined,
   deleteBusStop: (id: number) => Promise.resolve(),
   updateBusStop: (busStop: BusStop) => Promise.resolve(),
+  routes: [],
+  fetchRoutes: () => Promise.resolve(),
+  selectedRouteIdx: undefined,
+  setSelectedRouteIdx: (idx?: number) => true,
+  toggleRouteIdx: (idx?: number) => true,
+  selectedRoute: undefined,
+  routeForm: undefined,
+  setRouteForm: (route?: RouteForm) => true,
+  addBusStopToRoute: (routeId: number, busStopId: number) => Promise.resolve(),
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -39,7 +61,10 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [busStopForm, setBusStopForm] = useState<BusStop>();
   const [busStops, setBusStops] = useState<BusStop[]>([]);
+  const [routes, setRoutes] = useState<RouteWithData[]>([]);
   const [selectedBusStopIdx, setSelectedBusStopIdx] = useState<number>();
+  const [selectedRouteIdx, setSelectedRouteIdx] = useState<number>();
+  const [routeForm, setRouteForm] = useState<RouteForm>();
 
   const fetchBusStops = async () => {
     setIsLoading(true);
@@ -68,12 +93,42 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setIsLoading(false);
   };
 
+  const fetchRoutes = async () => {
+    setIsLoading(true);
+    const res = await api<RouteWithData[]>("/route", { method: "GET" });
+    setIsLoading(false);
+    setRoutes(res.data ?? []);
+  };
+
+  const addBusStopToRoute = async (routeId: number, busStopId: number) => {
+    setIsLoading(true);
+    await api(`/route/${routeId}/bus-stop`, {
+      method: "POST",
+      body: JSON.stringify({ busStopId }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    await fetchRoutes();
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     void fetchBusStops();
+    void fetchRoutes();
   }, []);
 
   const selectedBusStop =
     selectedBusStopIdx !== undefined ? busStops[selectedBusStopIdx] : undefined;
+
+  const selectedRoute =
+    selectedRouteIdx !== undefined ? routes[selectedRouteIdx] : undefined;
+
+  const toggleRouteIdx = (v?: number) =>
+    setSelectedRouteIdx((old) => (v === old ? undefined : v));
+
+  const toggleBusStopIdx = (v?: number) =>
+    setSelectedBusStopIdx((old) => (v === old ? undefined : v));
 
   return (
     <Context.Provider
@@ -90,6 +145,16 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         selectedBusStop,
         deleteBusStop,
         updateBusStop,
+        routes,
+        fetchRoutes,
+        selectedRouteIdx,
+        setSelectedRouteIdx,
+        toggleRouteIdx,
+        toggleBusStopIdx,
+        selectedRoute,
+        routeForm,
+        setRouteForm,
+        addBusStopToRoute,
       }}
     >
       {children}

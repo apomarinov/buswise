@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient, type RouteBusStop } from "@prisma/client";
-import busStops from "app/server/bus-stops";
+import busStops, { type BusStop } from "app/server/bus-stops";
 import { db } from "app/server/db";
 import googleRoutes from "app/server/external/google-routes";
 import { z } from "zod";
@@ -14,6 +14,10 @@ const schema = z
 
 export type Route = z.infer<typeof schema>;
 
+export type RouteWithData = Route & {
+  routeBusStops: RouteBusStop & { geoPoints: number[][]; busStop: BusStop }[];
+};
+
 const create = async (route: Route): Promise<Route> => {
   return db.route.create({
     data: route,
@@ -27,8 +31,12 @@ const update = async (route: Route): Promise<Route> => {
   });
 };
 
-const getList = async (): Promise<Route[]> => {
-  return db.route.findMany({ orderBy: { id: "desc" } });
+const getList = async (): Promise<RouteWithData[]> => {
+  const routes = await db.route.findMany({
+    include: { routeBusStops: { include: { busStop: true } } },
+    orderBy: { id: "desc" },
+  });
+  return routes as unknown as RouteWithData[];
 };
 
 const getById = async (id: number): Promise<Route | null> => {
