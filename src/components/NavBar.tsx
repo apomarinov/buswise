@@ -4,12 +4,16 @@ import Logo from "app/components/Icons/Logo";
 import { useUiController } from "app/contexts/UIController";
 import React from "react";
 
-const NavBar: React.FC = () => {
+type Props = {
+  onClickLogo: () => void;
+};
+
+const NavBar: React.FC<Props> = ({ onClickLogo }) => {
   const ui = useUiController();
   return (
     <div className="w-full bg-white drop-shadow-sm h-12 py-1 px-4 flex items-center justify-between z-10">
-      <div className="slide-in-blurred-left">
-        <Logo />
+      <div className="slide-in-blurred-left cursor-pointer">
+        <Logo onClick={onClickLogo} />
       </div>
       <div
         className="hidden max-sm:block cursor-pointer"
