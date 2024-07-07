@@ -71,6 +71,7 @@
         - DataStore can be better organized and some controls can be moved to UiController
         - API client can provide specific HTTP methods
         - Sidebar is responsive but touch actions are not handled properly
+        - Add CSS modules to extract Tailwind classes
 
 ### More Info
 If you're interested in more map work I've done you can check out my personal project [apotravels.asia](https://apotravels.asia/)

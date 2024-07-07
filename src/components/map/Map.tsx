@@ -339,19 +339,21 @@ const Map: React.FC = () => {
     <div className="flex flex-grow flex-col max-sm:w-full">
       <div className="p-2 flex flex-col gap-2 items-end" id="ui-top-right">
         {ui.mode === "routes" && (
-          <div className="bg-white w-fit drop-shadow-md rounded-lg px-2 py-1 flex items-center flex-col gap-2 text-gray-700">
-            <Checkbox
-              isChecked={showBusStops}
-              onChange={(e) => setShowBusStops(e.target.checked)}
-            >
-              <p className="!text-sm">Bus Stops</p>
-            </Checkbox>
+          <div className="flex justify-end">
+            <div className="bg-white w-fit px-2 drop-shadow-md rounded-lg py-1 flex items-center flex-col gap-2 text-gray-700">
+              <Checkbox
+                isChecked={showBusStops}
+                onChange={(e) => setShowBusStops(e.target.checked)}
+              >
+                <p className="!text-sm">Bus Stops</p>
+              </Checkbox>
+            </div>
           </div>
         )}
         <div className="flex gap-2">
           {infoBusStop && (
-            <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
-              <div className="flex items-center flex-col">
+            <div className="bg-white min-w-fit w-[120px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+              <div className="flex items-center flex-col w-full">
                 <p className="font-semibold mb-0.5">{infoBusStop.name}</p>
                 <p className="text-xs w-full text-center border-b-2 pb-1">
                   {infoBusStop.description}
@@ -370,9 +372,11 @@ const Map: React.FC = () => {
             </div>
           )}
           {infoRoute && (
-            <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
-              <p className="font-semibold">{infoRoute.name}</p>
-              <div>
+            <div className="bg-white min-w-fit w-[120px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+              <p className="font-semibold border-b-2 pb-2 w-full text-center">
+                {infoRoute.name}
+              </p>
+              <div className="w-full">
                 <p className="text-xs text-right">
                   {infoRoute.routeBusStops?.length > 0
                     ? "Bus Stops:"
