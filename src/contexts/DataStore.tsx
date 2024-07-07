@@ -31,6 +31,8 @@ type DataStoreContext = {
   deleteRoute: (id: number) => Promise<void>;
   visibleRoutes: number[];
   toggleVisibleRoute: (idx: number) => void;
+  showReportForRoute?: number;
+  toggleShowReportForRoute: (routeId: number) => void;
 };
 
 const Context = React.createContext<DataStoreContext>({
@@ -60,6 +62,8 @@ const Context = React.createContext<DataStoreContext>({
   deleteRoute: (id: number) => Promise.resolve(),
   visibleRoutes: [],
   toggleVisibleRoute: (idx: number) => true,
+  showReportForRoute: undefined,
+  toggleShowReportForRoute: (routeId: number) => true,
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -77,6 +81,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     DataStoreContext["routeFirstStops"]
   >({});
   const [visibleRoutes, setVisibleRoutes] = useState<number[]>([]);
+  const [showReportForRoute, setShowReportForRoute] = useState<number>();
 
   const fetchBusStops = async () => {
     setIsLoading(true);
@@ -168,6 +173,9 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   const toggleBusStopIdx = (v?: number) =>
     setSelectedBusStopIdx((old) => (v === old ? undefined : v));
 
+  const toggleShowReportForRoute = (v: number) =>
+    setShowReportForRoute((old) => (v === old ? undefined : v));
+
   return (
     <Context.Provider
       value={{
@@ -197,6 +205,8 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         deleteRoute,
         visibleRoutes,
         toggleVisibleRoute,
+        showReportForRoute,
+        toggleShowReportForRoute,
       }}
     >
       {children}

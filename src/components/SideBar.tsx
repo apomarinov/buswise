@@ -4,6 +4,7 @@ import Delete from "app/components/Icons/Delete";
 import Edit from "app/components/Icons/Edit";
 import Eye from "app/components/Icons/Eye";
 import EyeCrossed from "app/components/Icons/EyeCrossed";
+import Report from "app/components/Icons/Report";
 import ModalConfirm, {
   type ModalConfirmProps,
 } from "app/components/modal/ModalConfirm";
@@ -32,7 +33,7 @@ const ActionIcons: {
   show: EyeCrossed,
   hide: Eye,
   delete: Delete,
-  report: Delete,
+  report: Report,
 };
 
 const SideBar: React.FC = () => {
@@ -129,6 +130,7 @@ const SideBar: React.FC = () => {
     }
     const newConfig: SideBarItem[] = [];
     const newHiddenActions: typeof hiddenActions = {};
+
     dataStore.routes.forEach((route, idx) => {
       newHiddenActions[idx] = "hide";
       newConfig.push({
@@ -140,6 +142,7 @@ const SideBar: React.FC = () => {
         actions: {
           show: async () => toggleRoute(idx, "show"),
           hide: async () => toggleRoute(idx, "hide"),
+          report: async () => dataStore.toggleShowReportForRoute(route.id),
           edit: async () =>
             dataStore.setRouteForm({
               id: route.id,

@@ -18,8 +18,17 @@ const schema = z
 
 export type Route = z.infer<typeof schema>;
 
+export type RouteBusStopWithData = RouteBusStop & {
+  geoPoints: number[][];
+  busStop: BusStop;
+};
+
 export type RouteWithData = Route & {
-  routeBusStops: RouteBusStop & { geoPoints: number[][]; busStop: BusStop }[];
+  routeBusStops: RouteBusStopWithData[];
+  history?: {
+    routeId: number;
+    data: RouteBusStopWithData[];
+  };
 };
 
 const create = async (route: Route): Promise<Route> => {
@@ -39,6 +48,7 @@ const getList = async (): Promise<RouteWithData[]> => {
   const routes = await db.route.findMany({
     include: {
       routeBusStops: { include: { busStop: true }, orderBy: { order: "asc" } },
+      history: true,
     },
     orderBy: { id: "desc" },
   });
@@ -288,10 +298,12 @@ const recalculateMovedBusStopRoute = async (
     },
   });
 
+  let updatedRoutes: typeof routes = [];
   for (const route of routes) {
     for (let j = 0; j < route.routeBusStops.length; j++) {
       const moved = route.routeBusStops[j]!;
       if (moved.busStopId === busStopId) {
+        updatedRoutes.push(route);
         if (j > 0) {
           const previous = route.routeBusStops[j - 1]!;
           await updateBusStopRoute(moved.id, previous.busStop, moved.busStop);
@@ -302,6 +314,21 @@ const recalculateMovedBusStopRoute = async (
         }
       }
     }
+  }
+
+  updatedRoutes = [...new Set(updatedRoutes)];
+  for (const route of updatedRoutes) {
+    await db.routeHistory.upsert({
+      where: { routeId: route.id },
+      create: {
+        routeId: route.id,
+        data: route.routeBusStops,
+      },
+      update: {
+        routeId: route.id,
+        data: route.routeBusStops,
+      },
+    });
   }
 };
 

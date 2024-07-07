@@ -9,6 +9,7 @@ import { useUiController } from "app/contexts/UIController";
 import { env } from "app/env";
 import { colorFromString } from "app/helpers/string";
 import { type BusStop } from "app/server/bus-stops";
+import { type RouteBusStopWithData } from "app/server/routes";
 import GoogleMap, {
   type LatLngLiteral,
   type MapOptions,
@@ -85,6 +86,56 @@ const Map: React.FC = () => {
     };
   }, [map]);
 
+  const getPolylineFromRouteBusStops = (
+    routeBusStops: RouteBusStopWithData[],
+    idx: number,
+    strokeColor: string,
+    showFirst?: boolean,
+  ) => {
+    const path: { lat: number; lng: number }[] = [];
+    routeBusStops.forEach((busStop) => {
+      if (!busStop.geoPoints) {
+        if (showFirst) {
+          path.push({
+            lat: parseFloat(busStop.busStop.latitude.toString()),
+            lng: parseFloat(busStop.busStop.longitude.toString()),
+          });
+        }
+        return;
+      }
+      path.push(
+        ...busStop.geoPoints?.map((point) => ({
+          lat: point[0]!,
+          lng: point[1]!,
+        })),
+      );
+    });
+
+    const line = new google.maps.Polyline({
+      path,
+      map,
+      geodesic: true,
+      strokeColor,
+      strokeOpacity: 1.0,
+      strokeWeight: dataStore.selectedRouteIdx === idx ? 7 : 4,
+      zIndex: dataStore.selectedRouteIdx === idx ? 2 : 0,
+    });
+    line.addListener("mousemove", () => {
+      line.setOptions({ strokeWeight: 7, zIndex: 2 });
+    });
+    line.addListener("mouseout", () => {
+      if (dataStore.selectedRouteIdx !== idx) {
+        line.setOptions({ strokeWeight: 4, zIndex: 0 });
+      }
+    });
+    line.addListener("click", () => {
+      line.setOptions({ strokeWeight: 7, zIndex: 1 });
+      dataStore.setSelectedRouteIdx(idx);
+    });
+
+    return line;
+  };
+
   useEffect(() => {
     if (!map) {
       return;
@@ -96,47 +147,29 @@ const Map: React.FC = () => {
     }
     const newPaths: google.maps.Polyline[] = [];
     dataStore.routes.forEach((route, idx) => {
+      if (
+        dataStore.showReportForRoute !== undefined &&
+        dataStore.showReportForRoute !== route.id
+      ) {
+        return;
+      }
       if (!dataStore.visibleRoutes.includes(idx)) {
         return;
       }
-      const path: { lat: number; lng: number }[] = [];
-      route.routeBusStops.forEach((busStop) => {
-        if (!busStop.geoPoints) {
-          path.push({
-            lat: parseFloat(busStop.busStop.latitude.toString()),
-            lng: parseFloat(busStop.busStop.longitude.toString()),
-          });
-          return;
-        }
-        path.push(
-          ...busStop.geoPoints?.map((point) => ({
-            lat: point[0]!,
-            lng: point[1]!,
-          })),
+
+      if (dataStore.showReportForRoute === route.id && route.history) {
+        newPaths.push(
+          getPolylineFromRouteBusStops(route.history.data, idx, "#ee5f5f"),
         );
-      });
-      const line = new google.maps.Polyline({
-        path,
-        map,
-        geodesic: true,
-        strokeColor: colorFromString(route.name),
-        strokeOpacity: 1.0,
-        strokeWeight: dataStore.selectedRouteIdx === idx ? 7 : 4,
-        zIndex: dataStore.selectedRouteIdx === idx ? 2 : 0,
-      });
-      line.addListener("mousemove", () => {
-        line.setOptions({ strokeWeight: 7, zIndex: 2 });
-      });
-      line.addListener("mouseout", () => {
-        if (dataStore.selectedRouteIdx !== idx) {
-          line.setOptions({ strokeWeight: 4, zIndex: 0 });
-        }
-      });
-      line.addListener("click", () => {
-        line.setOptions({ strokeWeight: 7, zIndex: 1 });
-        dataStore.setSelectedRouteIdx(idx);
-      });
-      newPaths.push(line);
+      }
+      newPaths.push(
+        getPolylineFromRouteBusStops(
+          route.routeBusStops,
+          idx,
+          colorFromString(route.name),
+          true,
+        ),
+      );
     });
     setRoutePaths(newPaths);
   }, [
@@ -145,6 +178,7 @@ const Map: React.FC = () => {
     ui.mode,
     dataStore.selectedRouteIdx,
     dataStore.visibleRoutes,
+    dataStore.showReportForRoute,
   ]);
 
   const onBusStopClick = (

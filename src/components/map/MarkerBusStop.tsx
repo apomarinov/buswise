@@ -35,7 +35,7 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
       className={cn(
         "translate-y-[-40%] cursor-pointer rounded-full hover:bg-white p-1",
         isSelected && "bg-white bg-opacity-80",
-        isFirstStopInRoute && "translate-x-[20%] translate-y-[-25%] !p-2",
+        isFirstStopInRoute && "translate-x-[20%] translate-y-[-24%] !p-2",
       )}
     >
       {isFirstStopInRoute ? (
