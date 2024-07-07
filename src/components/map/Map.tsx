@@ -96,6 +96,9 @@ const Map: React.FC = () => {
     }
     const newPaths: google.maps.Polyline[] = [];
     dataStore.routes.forEach((route, idx) => {
+      if (!dataStore.visibleRoutes.includes(idx)) {
+        return;
+      }
       const path: { lat: number; lng: number }[] = [];
       route.routeBusStops.forEach((busStop) => {
         if (!busStop.geoPoints) {
@@ -136,7 +139,13 @@ const Map: React.FC = () => {
       newPaths.push(line);
     });
     setRoutePaths(newPaths);
-  }, [dataStore.routes, map, ui.mode, dataStore.selectedRouteIdx]);
+  }, [
+    dataStore.routes,
+    map,
+    ui.mode,
+    dataStore.selectedRouteIdx,
+    dataStore.visibleRoutes,
+  ]);
 
   const onBusStopClick = (e: MouseEvent, idx: number, busStop: BusStop) => {
     e.stopPropagation();

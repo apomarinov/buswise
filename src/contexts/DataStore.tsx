@@ -29,6 +29,8 @@ type DataStoreContext = {
   addBusStopToRoute: (routeId: number, busStopId: number) => Promise<void>;
   routeFirstStops: { [k in string]: number };
   deleteRoute: (id: number) => Promise<void>;
+  visibleRoutes: number[];
+  toggleVisibleRoute: (idx: number) => void;
 };
 
 const Context = React.createContext<DataStoreContext>({
@@ -56,6 +58,8 @@ const Context = React.createContext<DataStoreContext>({
   addBusStopToRoute: (routeId: number, busStopId: number) => Promise.resolve(),
   routeFirstStops: {},
   deleteRoute: (id: number) => Promise.resolve(),
+  visibleRoutes: [],
+  toggleVisibleRoute: (idx: number) => true,
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -72,6 +76,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   const [routeFirstStops, setRouteFirstStops] = useState<
     DataStoreContext["routeFirstStops"]
   >({});
+  const [visibleRoutes, setVisibleRoutes] = useState<number[]>([]);
 
   const fetchBusStops = async () => {
     setIsLoading(true);
@@ -136,6 +141,16 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setIsLoading(false);
   };
 
+  const toggleVisibleRoute = (idx: number) => {
+    const visible = visibleRoutes.indexOf(idx);
+    if (visible >= 0) {
+      visibleRoutes.splice(visible, 1);
+    } else {
+      visibleRoutes.push(idx);
+    }
+    setVisibleRoutes([...visibleRoutes]);
+  };
+
   useEffect(() => {
     void fetchBusStops();
     void fetchRoutes();
@@ -180,6 +195,8 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         addBusStopToRoute,
         routeFirstStops,
         deleteRoute,
+        visibleRoutes,
+        toggleVisibleRoute,
       }}
     >
       {children}

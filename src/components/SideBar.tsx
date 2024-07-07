@@ -2,6 +2,8 @@ import { Button } from "@chakra-ui/react";
 import { api } from "app/api";
 import Delete from "app/components/Icons/Delete";
 import Edit from "app/components/Icons/Edit";
+import Eye from "app/components/Icons/Eye";
+import EyeCrossed from "app/components/Icons/EyeCrossed";
 import ModalConfirm, {
   type ModalConfirmProps,
 } from "app/components/modal/ModalConfirm";
@@ -13,7 +15,7 @@ import { type Mode } from "app/types/client";
 import cn from "classnames";
 import React, { useEffect, useState } from "react";
 
-type SideBarItemActionType = "edit" | "delete" | "toggle" | "report";
+type SideBarItemActionType = "edit" | "delete" | "show" | "report" | "hide";
 
 type SideBarItem = {
   name: string;
@@ -27,6 +29,8 @@ const ActionIcons: {
   [k in SideBarItemActionType]: React.FC<React.SVGProps<any>>;
 } = {
   edit: Edit,
+  show: EyeCrossed,
+  hide: Eye,
   delete: Delete,
 };
 
@@ -39,6 +43,9 @@ const SideBar: React.FC = () => {
   const [activeItem, setActiveItem] = useState<number>();
   const [emptyMessage, setEmptyMessage] = useState("");
   const [deleteModal, setDeleteModal] = useState<ModalConfirmProps>();
+  const [hiddenActions, setHiddenActions] = useState<{
+    [k in number]?: SideBarItemActionType;
+  }>({});
 
   const changeMode = async (mode: Mode) => {
     ui.setMode(mode);
@@ -107,12 +114,22 @@ const SideBar: React.FC = () => {
     );
   }, [dataStore.busStops, ui.mode]);
 
+  const toggleRoute = (idx: number, action: SideBarItemActionType) => {
+    setHiddenActions((old) => {
+      old[idx] = action;
+      return { ...old };
+    });
+    dataStore.toggleVisibleRoute(idx);
+  };
+
   useEffect(() => {
     if (ui.mode !== "routes") {
       return;
     }
     const newConfig: SideBarItem[] = [];
+    const newHiddenActions: typeof hiddenActions = {};
     dataStore.routes.forEach((route, idx) => {
+      newHiddenActions[idx] = "hide";
       newConfig.push({
         name: route.name,
         onClick: () => {
@@ -120,6 +137,8 @@ const SideBar: React.FC = () => {
           setActiveItem((old) => (old === idx ? undefined : old));
         },
         actions: {
+          show: async () => toggleRoute(idx, "show"),
+          hide: async () => toggleRoute(idx, "hide"),
           edit: async () =>
             dataStore.setRouteForm({
               id: route.id,
@@ -129,6 +148,7 @@ const SideBar: React.FC = () => {
         },
       });
     });
+    setHiddenActions(newHiddenActions);
     setConfig(newConfig);
     let message = "";
     if (!newConfig.length && !dataStore.busStops.length) {
@@ -191,19 +211,21 @@ const SideBar: React.FC = () => {
             {cfg.name}
             {Object.keys(cfg.actions).length > 0 && (
               <div className="flex gap-1.5 items-center">
-                {Object.keys(cfg.actions).map((key, aIdx) => {
-                  const action = key as SideBarItemActionType;
-                  const Icon = ActionIcons[action];
-                  return (
-                    <Icon
-                      key={aIdx}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void cfg.actions[action]?.();
-                      }}
-                    />
-                  );
-                })}
+                {Object.keys(cfg.actions)
+                  .filter((a) => a !== hiddenActions[idx])
+                  .map((key, aIdx) => {
+                    const action = key as SideBarItemActionType;
+                    const Icon = ActionIcons[action];
+                    return (
+                      <Icon
+                        key={key}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void cfg.actions[action]?.();
+                        }}
+                      />
+                    );
+                  })}
               </div>
             )}
           </Button>
