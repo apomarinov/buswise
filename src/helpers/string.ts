@@ -12,9 +12,9 @@ export const md5 = (str: string) => {
 export const sumCharactersToNumber = (str: string) =>
   str.split("").reduce((prev, curr) => prev + curr.charCodeAt(0), 0);
 
-export const colorFromString = (str?: string) => {
+export const colorFromString = (str?: string, maxHue = 360) => {
   if (!str) return "";
-  return `hsl(${sumCharactersToNumber(md5(str)) % 300}, 70%, 60%)`;
+  return `hsl(${sumCharactersToNumber(md5(str)) % maxHue}, 70%, 60%)`;
 };
 
 export async function sleep(ms: number) {

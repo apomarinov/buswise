@@ -190,7 +190,7 @@ const Map: React.FC = () => {
         getPolylineFromRouteBusStops(
           route.routeBusStops,
           idx,
-          colorFromString(route.name),
+          colorFromString(route.name, 290),
           false,
           route,
         ),
@@ -422,7 +422,7 @@ const Map: React.FC = () => {
                 busStop.id,
               )
             ) {
-              color = colorFromString(dataStore.selectedRoute?.name);
+              color = colorFromString(dataStore.selectedRoute?.name, 290);
               busStopIdx = dataStore.selectedRoute.routeBusStops.findIndex(
                 (b) => b.busStopId === busStop.id,
               );
