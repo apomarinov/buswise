@@ -63,9 +63,14 @@
     - UI and State managers
     - SVG Icon components
     - Reusable modal components
+    - UI blocking on load
     - API client
     - Due to time constraint
         - More components can be decoupled from the business logic and turned into reusable components
         - Larger components can be broken down into smaller
         - DataStore can be better organized and some controls can be moved to UiController
         - API client can provide specific HTTP methods
+        - Sidebar is responsive but touch actions are not handled properly
+
+### More Info
+If you're interested in more map work I've done you can check out my personal project [apotravels.asia](https://apotravels.asia/)
