@@ -370,14 +370,18 @@ const Map: React.FC = () => {
             <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <p className="font-semibold">{infoRoute.name}</p>
               <div>
-                <p className="text-xs">
+                <p className="text-xs text-right">
                   {infoRoute.routeBusStops?.length > 0
                     ? "Bus Stops:"
                     : "No Bus Stops"}
                 </p>
-                {infoRoute.routeBusStops.map((busStop) => (
-                  <div key={busStop.busStop.name} className="text-right">
-                    {busStop.busStop.name}
+                {infoRoute.routeBusStops.map((busStop, idx) => (
+                  <div
+                    key={busStop.busStop.name}
+                    className="flex justify-between gap-4"
+                  >
+                    <span>{idx + 1}. </span>
+                    <span>{busStop.busStop.name}</span>
                   </div>
                 ))}
               </div>
@@ -404,6 +408,7 @@ const Map: React.FC = () => {
         {showBusStops &&
           dataStore.busStops.map((busStop, idx) => {
             let color;
+            let busStopIdx;
             if (
               dataStore.selectedRoute &&
               dataStore.routeStopIds[dataStore.selectedRoute.id]?.includes(
@@ -411,6 +416,9 @@ const Map: React.FC = () => {
               )
             ) {
               color = colorFromString(dataStore.selectedRoute?.name);
+              busStopIdx = dataStore.selectedRoute.routeBusStops.findIndex(
+                (b) => b.busStopId === busStop.id,
+              );
             }
             const isFirstStopInRoute =
               !!dataStore.routeFirstStops[busStop.id] &&
@@ -425,6 +433,7 @@ const Map: React.FC = () => {
 
             return (
               <MarkerBusStop
+                idx={busStopIdx}
                 onHover={() => setHoverBusStop(busStop)}
                 onStopHover={() => setHoverBusStop(undefined)}
                 stopName={busStop.name}

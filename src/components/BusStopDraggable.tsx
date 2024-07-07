@@ -8,11 +8,12 @@ import React from "react";
 import { useDrag, useDrop } from "react-dnd";
 
 type Props = {
+  idx: number;
   busStop: RouteBusStopWithData;
   onDragEnd: (busStopId: number, fromOrder: number, toOrder: number) => void;
 };
 
-const BusStopDraggable: React.FC<Props> = ({ busStop, onDragEnd }) => {
+const BusStopDraggable: React.FC<Props> = ({ busStop, onDragEnd, idx }) => {
   const [{ opacity }, dragRef] = useDrag(
     () => ({
       type: "card",
@@ -62,6 +63,7 @@ const BusStopDraggable: React.FC<Props> = ({ busStop, onDragEnd }) => {
           dataStore.setSelectedBusStopById(busStop.busStopId);
         }}
       >
+        {`${idx + 1}. `}
         {busStop.busStop.name}
         <div className="flex gap-1">
           <Reorder />

@@ -9,6 +9,7 @@ export type MarkerBusStopProps = {
   draggable?: boolean;
   lat: number;
   lng: number;
+  idx?: number;
   isFirstStopInRoute: boolean;
   isSelected: boolean;
   color?: string;
@@ -42,6 +43,7 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
   stopName,
   onHover,
   onStopHover,
+  idx,
 }) => {
   const travelTimeText = moment()
     .from(moment().subtract(travelTime, "seconds"))
@@ -76,6 +78,7 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
       {travelTime !== undefined && travelTime > 0 && (
         <div className="absolute -bottom-11 flex flex-col gap-0 bg-white p-0.5 rounded-md drop-shadow-sm justify-start px-1">
           <span className="whitespace-nowrap font-semibold w-full text-center mb-0.5">
+            {idx !== undefined && idx >= 0 && `${idx + 1}. `}
             {stopName}
           </span>
           <span className="whitespace-nowrap">{travelTimeText}</span>

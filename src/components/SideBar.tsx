@@ -220,7 +220,7 @@ const SideBar: React.FC = () => {
   }, [dataStore.selectedRouteIdx, dataStore.selectedRoute]);
 
   return (
-    <div className="flex relative drop-shadow-md flex-col bg-white max-w-[25%] min-w-[200px] max-sm:min-w-full max-sm:absolute top-0 left-0 max-sm:h-full z-[2]">
+    <div className="flex relative drop-shadow-md flex-col bg-white max-w-[25%] min-w-[300px] max-sm:min-w-full max-sm:absolute top-0 left-0 max-sm:h-full z-[2]">
       {dataStore.isLoading && (
         <div className="bg-white z-10 cursor-wait opacity-70 absolute top-0 left-0 w-full h-full"></div>
       )}
@@ -299,22 +299,25 @@ const SideBar: React.FC = () => {
                         Click a Bus Stop in the map to add to this route
                       </p>
                     )}
-                    {dataStore.selectedRoute?.routeBusStops?.map((busStop) => {
-                      return (
-                        <BusStopDraggable
-                          key={busStop.busStop.name}
-                          busStop={busStop}
-                          onDragEnd={(busStopId, fromOrder, toOrder) => {
-                            void dataStore.changeBusStopOrderInRoute(
-                              dataStore.selectedRoute!.id,
-                              busStopId,
-                              fromOrder,
-                              toOrder,
-                            );
-                          }}
-                        />
-                      );
-                    })}
+                    {dataStore.selectedRoute?.routeBusStops?.map(
+                      (busStop, idx) => {
+                        return (
+                          <BusStopDraggable
+                            idx={idx}
+                            key={busStop.busStop.name}
+                            busStop={busStop}
+                            onDragEnd={(busStopId, fromOrder, toOrder) => {
+                              void dataStore.changeBusStopOrderInRoute(
+                                dataStore.selectedRoute!.id,
+                                busStopId,
+                                fromOrder,
+                                toOrder,
+                              );
+                            }}
+                          />
+                        );
+                      },
+                    )}
                   </div>
                 )}
             </DndProvider>
