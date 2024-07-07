@@ -103,8 +103,8 @@ const Map: React.FC = () => {
       route.routeBusStops.forEach((busStop) => {
         if (!busStop.geoPoints) {
           path.push({
-            lat: parseFloat(busStop.busStop.latitude),
-            lng: parseFloat(busStop.busStop.longitude),
+            lat: parseFloat(busStop.busStop.latitude.toString()),
+            lng: parseFloat(busStop.busStop.longitude.toString()),
           });
           return;
         }
@@ -147,14 +147,18 @@ const Map: React.FC = () => {
     dataStore.visibleRoutes,
   ]);
 
-  const onBusStopClick = (e: MouseEvent, idx: number, busStop: BusStop) => {
+  const onBusStopClick = (
+    e: React.MouseEvent<SVGSVGElement, MouseEvent>,
+    idx: number,
+    busStop: BusStop,
+  ) => {
     e.stopPropagation();
     setIsDragging((old) => {
       if (!old) {
         dataStore.setSelectedBusStopIdx(idx);
         if (ui.mode === "routes") {
           const existsInRoute = dataStore.selectedRoute?.routeBusStops?.find(
-            (b) => b.busStopId === busStop.id,
+            (b) => b.busStop.id === busStop.id,
           );
           if (existsInRoute) {
             console.log("show info");

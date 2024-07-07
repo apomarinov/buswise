@@ -24,7 +24,7 @@ model BusStop {
 model Route {
   id            Int            @id @default(autoincrement())
   name          String         @unique @db.VarChar(40)
-  history       RouteHistory[]
+  history       RouteHistory?
   routeBusStops RouteBusStop[]
 
   @@map("routes")
@@ -32,9 +32,9 @@ model Route {
 
 model RouteHistory {
   id      Int   @id @default(autoincrement())
-  routeId Int
-  route   Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
-  data    Json?
+  routeId Int   @unique
+  route   Route @relation(fields: [routeId], references: [id])
+  data    Json
 
   @@index([routeId])
   @@map("route_history")

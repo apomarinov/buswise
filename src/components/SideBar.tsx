@@ -32,6 +32,7 @@ const ActionIcons: {
   show: EyeCrossed,
   hide: Eye,
   delete: Delete,
+  report: Delete,
 };
 
 const SideBar: React.FC = () => {
