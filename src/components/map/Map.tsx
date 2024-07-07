@@ -351,9 +351,12 @@ const Map: React.FC = () => {
         <div className="flex gap-2">
           {infoBusStop && (
             <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
-              <p className="font-semibold">{infoBusStop.name}</p>
-              <div>
-                <p className="text-xs">
+              <div className="flex items-center flex-col">
+                <p className="font-semibold mb-0.5">{infoBusStop.name}</p>
+                <p className="text-xs w-full text-center border-b-2 pb-1">
+                  {infoBusStop.description}
+                </p>
+                <p className="text-xs mt-1">
                   {dataStore.busStopToRoute[infoBusStop.id]?.length
                     ? "Used in routes"
                     : "Not used in routes"}

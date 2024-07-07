@@ -201,7 +201,7 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
     throw new Error("New order cannot be the same");
   }
 
-  const route = await db.route.findUniqueOrThrow({
+  let route = await db.route.findUniqueOrThrow({
     where: { id: data.routeId },
     include: {
       routeBusStops: { include: { busStop: true }, orderBy: { order: "asc" } },
@@ -214,11 +214,9 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
   for (const busStop of route.routeBusStops) {
     if (busStop.order === data.to) {
       toBusStop = { ...busStop };
-      toBusStop.order = data.from;
     }
     if (busStop.order === data.from) {
       fromBusStop = { ...busStop };
-      fromBusStop.order = data.to;
     }
   }
 
@@ -227,19 +225,6 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
   }
 
   await saveHistory(route.id);
-
-  // determine actions
-  let toRemoveGeoFrom: typeof fromBusStop = toBusStop;
-  let toUpdateGeo: (typeof fromBusStop)[] = [fromBusStop, toBusStop];
-
-  if (data.from === 1) {
-    toRemoveGeoFrom = toBusStop;
-    toUpdateGeo = [fromBusStop];
-  }
-  if (data.to === 1) {
-    toRemoveGeoFrom = fromBusStop;
-    toUpdateGeo = [toBusStop];
-  }
 
   // update order
   await db.routeBusStop.update({
@@ -255,39 +240,45 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
     },
   });
 
-  // recalculate route info
-  for (const updateBusStop of toUpdateGeo) {
-    const previousStop = await db.routeBusStop.findFirstOrThrow({
-      where: { routeId: data.routeId, order: updateBusStop.order - 1 },
-      include: { busStop: true },
-    });
-    await updateBusStopRoute(
-      updateBusStop.id,
-      previousStop.busStop,
-      updateBusStop.busStop,
-    );
-  }
+  route = await db.route.findUniqueOrThrow({
+    where: { id: data.routeId },
+    include: {
+      routeBusStops: { include: { busStop: true }, orderBy: { order: "asc" } },
+    },
+  });
 
-  // update the new first bus stop
-  if (toRemoveGeoFrom) {
-    await db.routeBusStop.update({
-      where: { id: toRemoveGeoFrom.id },
-      data: {
-        order: 1,
-        distance: 0,
-        travelTime: 0,
-        geoPoints: [],
-      },
-    });
-    const secondStop = await db.routeBusStop.findFirstOrThrow({
-      where: { routeId: data.routeId, order: 2 },
-      include: { busStop: true },
-    });
-    await updateBusStopRoute(
-      secondStop.id,
-      toRemoveGeoFrom.busStop,
-      secondStop.busStop,
-    );
+  // recalculate route for both modified bus stops
+  for (let i = 0; i < route.routeBusStops.length; i++) {
+    const busStop = route.routeBusStops[i]!;
+    if (busStop.order !== data.from && busStop.order !== data.to) {
+      continue;
+    }
+    const previous = i > 0 ? route.routeBusStops[i - 1] : undefined;
+    const next =
+      i < route.routeBusStops.length - 1
+        ? route.routeBusStops[i + 1]
+        : undefined;
+
+    if (busStop.order === data.from || busStop.order === data.to) {
+      if (busStop.order === 1) {
+        await db.routeBusStop.update({
+          where: { id: busStop.id },
+          data: {
+            distance: 0,
+            travelTime: 0,
+            geoPoints: [],
+          },
+        });
+        if (next) {
+          await updateBusStopRoute(next.id, busStop.busStop, next.busStop);
+        }
+      } else if (busStop.order === route.routeBusStops.length && previous) {
+        await updateBusStopRoute(busStop.id, previous.busStop, busStop.busStop);
+      } else if (previous && next) {
+        await updateBusStopRoute(next.id, busStop.busStop, next.busStop);
+        await updateBusStopRoute(busStop.id, previous.busStop, busStop.busStop);
+      }
+    }
   }
 };
 
