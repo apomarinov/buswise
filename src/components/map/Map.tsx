@@ -128,13 +128,14 @@ const Map: React.FC = () => {
       zIndex: dataStore.selectedRouteIdx === idx ? 2 : 0,
     });
     line.addListener("mousemove", () => {
-      line.setOptions({ strokeWeight: activeStrokeSize, zIndex: 2 });
+      line.setOptions({ strokeWeight: activeStrokeSize, zIndex: 4 });
       setHoverRoute(route);
     });
     line.addListener("mouseout", () => {
       if (dataStore.selectedRouteIdx !== idx) {
-        line.setOptions({ strokeWeight: 4, zIndex: 0 });
+        line.setOptions({ strokeWeight: 4 });
       }
+      line.setOptions({ zIndex: 1 });
       setHoverRoute(undefined);
     });
     line.addListener("click", () => {

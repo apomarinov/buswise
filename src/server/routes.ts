@@ -229,15 +229,15 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
   await saveHistory(route.id);
 
   // determine actions
-  let toRemoveGeoFromId;
+  let toRemoveGeoFrom: typeof fromBusStop = toBusStop;
   let toUpdateGeo: (typeof fromBusStop)[] = [fromBusStop, toBusStop];
 
   if (data.from === 1) {
-    toRemoveGeoFromId = toBusStop.id;
+    toRemoveGeoFrom = toBusStop;
     toUpdateGeo = [fromBusStop];
   }
   if (data.to === 1) {
-    toRemoveGeoFromId = fromBusStop.id;
+    toRemoveGeoFrom = fromBusStop;
     toUpdateGeo = [toBusStop];
   }
 
@@ -269,9 +269,9 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
   }
 
   // update the new first bus stop
-  if (toRemoveGeoFromId) {
+  if (toRemoveGeoFrom) {
     await db.routeBusStop.update({
-      where: { id: toRemoveGeoFromId },
+      where: { id: toRemoveGeoFrom.id },
       data: {
         order: 1,
         distance: 0,
@@ -279,6 +279,15 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
         geoPoints: [],
       },
     });
+    const secondStop = await db.routeBusStop.findFirstOrThrow({
+      where: { routeId: data.routeId, order: 2 },
+      include: { busStop: true },
+    });
+    await updateBusStopRoute(
+      secondStop.id,
+      toRemoveGeoFrom.busStop,
+      secondStop.busStop,
+    );
   }
 };
 
