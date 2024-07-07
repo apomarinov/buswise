@@ -1,29 +1,71 @@
-# Create T3 App
+# BusWise
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
 
-## What's next? How do I make an app with this?
+### Features
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+1. Bus Stops
+- Click on the map to add a new bus stop
+- Click on a bus stop in the list to select it and again to deselect it
+- Actions
+    - Click the edit icon to edit the bus stop
+    - Click the delete icon to delete the bus stop
+- Map
+    - Hover over bus stops to see their info
+    - Drag a bus stop to change the location
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+2. Routes
+- With no route selected, click on a bus stop in the map to create a route and automatically add the bus stop to it
+- Click a route in the list to select it, then click on other bus stops to add to the route or create a new route
+- Google Routes API integration provides real route paths
+- Actions
+    - Click the eye icon to toggle route visibility in the map
+    - If a route has several bus stops, click the list icon to view the last changes in the map. The previous route state is displayed in red.
+    - Click the edit icon to edit the route
+    - Click the delete icon to delete the route
+- Bus Stop list actions
+    - Click on a route to see a list of its bus stops
+    - Drag and drop bus stops over one another to change the order
+    - Click the delete icon to remove the bus stop from the route
+- Map
+    - Route colors are based on their names for consistency
+    - Selected route bus stops are colored the same as the route for better visibility
+    - Click the Bus Stops checkbox to toggle bus stop visibility
+    - Hover over a route
+        - Brings it over any other routes
+        - Shows an info panel with the bus stops
+    - With a selected route
+        - Total travel time and total distance information are displayed under the first bus stop
+        - Under each of the other bus stops approximate travel time and distance coming from the previous bus stop are displayed
+        - Clicking on a route's bust stop will show a control panel with the option to remove it from the route
+        - Clicking on a bus stop not part of the route will show a control panel with the option to add it to the route or create a new route
+        - Changing a bus stop's location will recalculate the route paths in each route that uses the bus stop
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
 
-## Learn More
+### Missing Features
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+- "Double click to add a new stop." - The map events for double click also trigger click and single click does the same job
+- "Right-click context menu" - In routes mode, clicking on the map to add a bus stop also starts a route if no route is selected or adds a new stop to the current selected route
+- "Multi-select" - to be implemented
+- "Future Planning" - assuming this is covered by displaying multiple routes in the map
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
-
-## How do I deploy this?
-
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+### Technical
+- DB structure and indexing
+- API
+    - REST structure
+    - Query, Body and resource validation
+    - API error handler
+    - Due to time constraint
+        - Didn't use enough DB transactions
+        - There may be some functionality repetition
+        - Structure can be improved by adding separate actions to be called by the APIs which will combine functionality from the entity modules
+- Client
+    - UI and State managers
+    - SVG Icon components
+    - Reusable modal components
+    - API client
+    - Due to time constraint
+        - More components can be decoupled from the business logic and turned into reusable components
+        - Larger components can be broken down into smaller
+        - DataStore can be better organized and some controls can be moved to UiController
+        - API client can provide specific HTTP methods
