@@ -1,3 +1,4 @@
+import { Checkbox } from "@chakra-ui/react";
 import MapUiConfirm, {
   type MapUiConfirmProps,
 } from "app/components/map/MapUiConfirm";
@@ -64,11 +65,18 @@ const Map: React.FC = () => {
   const ui = useUiController();
   const [map, setMap] = useState<google.maps.Map>();
   const [isDragging, setIsDragging] = useState(false);
+  const [showBusStops, setShowBusStops] = useState(true);
   const [mapConfirm, setMapConfirm] = useState<MapUiConfirmProps>();
   const [renderSeed, setRenderSeed] = useState(0);
   const [routePaths, setRoutePaths] = useState<google.maps.Polyline[]>([]);
   const [hoverBusStop, setHoverBusStop] = useState<BusStop>();
   const [hoverRoute, setHoverRoute] = useState<RouteWithData>();
+
+  useEffect(() => {
+    if (ui.mode === "routes") {
+      setShowBusStops(true);
+    }
+  }, [ui.mode]);
 
   useEffect(() => {
     if (!map) {
@@ -330,6 +338,16 @@ const Map: React.FC = () => {
   return (
     <div className="flex flex-grow flex-col max-sm:w-full">
       <div className="p-2 flex flex-col gap-2 items-end" id="ui-top-right">
+        {ui.mode === "routes" && (
+          <div className="bg-white w-fit drop-shadow-md rounded-lg px-2 py-1 flex items-center flex-col gap-2 text-gray-700">
+            <Checkbox
+              isChecked={showBusStops}
+              onChange={(e) => setShowBusStops(e.target.checked)}
+            >
+              <p className="!text-sm">Bus Stops</p>
+            </Checkbox>
+          </div>
+        )}
         <div className="flex gap-2">
           {infoBusStop && (
             <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
@@ -383,47 +401,48 @@ const Map: React.FC = () => {
           );
         }}
       >
-        {dataStore.busStops.map((busStop, idx) => {
-          let color;
-          if (
-            dataStore.selectedRoute &&
-            dataStore.routeStopIds[dataStore.selectedRoute.id]?.includes(
+        {showBusStops &&
+          dataStore.busStops.map((busStop, idx) => {
+            let color;
+            if (
+              dataStore.selectedRoute &&
+              dataStore.routeStopIds[dataStore.selectedRoute.id]?.includes(
+                busStop.id,
+              )
+            ) {
+              color = colorFromString(dataStore.selectedRoute?.name);
+            }
+            const isFirstStopInRoute =
+              !!dataStore.routeFirstStops[busStop.id] &&
+              (dataStore.routeFirstStops[busStop.id] ===
+                dataStore.selectedRoute?.id ||
+                !dataStore.selectedRoute) &&
+              ui.mode === "routes";
+            const metrics = dataStore.getBusStopMetrics(
               busStop.id,
-            )
-          ) {
-            color = colorFromString(dataStore.selectedRoute?.name);
-          }
-          const isFirstStopInRoute =
-            !!dataStore.routeFirstStops[busStop.id] &&
-            (dataStore.routeFirstStops[busStop.id] ===
-              dataStore.selectedRoute?.id ||
-              !dataStore.selectedRoute) &&
-            ui.mode === "routes";
-          const metrics = dataStore.getBusStopMetrics(
-            busStop.id,
-            isFirstStopInRoute,
-          );
+              isFirstStopInRoute,
+            );
 
-          return (
-            <MarkerBusStop
-              onHover={() => setHoverBusStop(busStop)}
-              onStopHover={() => setHoverBusStop(undefined)}
-              stopName={busStop.name}
-              distance={metrics.distance}
-              travelTime={metrics.travelTime}
-              key={idx + renderSeed}
-              color={color}
-              isFirstStopInRoute={isFirstStopInRoute}
-              isSelected={dataStore.selectedBusStopIdx === idx}
-              lat={busStop.latitude}
-              lng={busStop.longitude}
-              onClick={(e) => onBusStopClick(e, idx, busStop)} // you need to manage this prop on your Marker component!
-              draggable
-              onDrag={onBusStopDrag}
-              onDragEnd={onBusStopDragEnd(busStop)}
-            />
-          );
-        })}
+            return (
+              <MarkerBusStop
+                onHover={() => setHoverBusStop(busStop)}
+                onStopHover={() => setHoverBusStop(undefined)}
+                stopName={busStop.name}
+                distance={metrics.distance}
+                travelTime={metrics.travelTime}
+                key={idx + renderSeed}
+                color={color}
+                isFirstStopInRoute={isFirstStopInRoute}
+                isSelected={dataStore.selectedBusStopIdx === idx}
+                lat={busStop.latitude}
+                lng={busStop.longitude}
+                onClick={(e) => onBusStopClick(e, idx, busStop)} // you need to manage this prop on your Marker component!
+                draggable
+                onDrag={onBusStopDrag}
+                onDragEnd={onBusStopDragEnd(busStop)}
+              />
+            );
+          })}
       </GoogleMap>
     </div>
   );
