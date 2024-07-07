@@ -206,68 +206,6 @@ const Map: React.FC = () => {
     setIsDragging((old) => {
       if (!old) {
         dataStore.setSelectedBusStopIdx(idx);
-        if (ui.mode === "routes") {
-          const existsInRoute = dataStore.selectedRoute?.routeBusStops?.find(
-            (b) => b.busStop.id === busStop.id,
-          );
-          if (existsInRoute) {
-            setMapConfirm({
-              isLoading: false,
-              actions: [
-                {
-                  text: "Remove From Route",
-                  action: () => {
-                    if (dataStore.selectedRoute?.id) {
-                      void dataStore
-                        .removeBusStopFromRoute(
-                          dataStore.selectedRoute.id,
-                          busStop.id,
-                        )
-                        .then((r) => setMapConfirm(undefined));
-                    }
-                  },
-                },
-              ],
-              onCancel: () => {
-                setMapConfirm(undefined);
-                dataStore.setSelectedBusStopIdx();
-              },
-            });
-          } else if (dataStore.selectedRoute) {
-            setMapConfirm({
-              text: `Add stop "${busStop.name}" to route "${dataStore.selectedRoute.name}"?`,
-              isLoading: false,
-              actions: [
-                {
-                  text: "Add To Route",
-                  action: () => {
-                    if (dataStore.selectedRoute?.id) {
-                      void dataStore
-                        .addBusStopToRoute(
-                          dataStore.selectedRoute.id,
-                          busStop.id,
-                        )
-                        .then((r) => setMapConfirm(undefined));
-                    }
-                  },
-                },
-                {
-                  text: "New Route",
-                  action: () => {
-                    dataStore.setRouteForm({ name: "" });
-                    setMapConfirm(undefined);
-                  },
-                },
-              ],
-              onCancel: () => {
-                setMapConfirm(undefined);
-                dataStore.setSelectedBusStopIdx();
-              },
-            });
-          } else {
-            dataStore.setRouteForm({ name: "" });
-          }
-        }
       }
       return false;
     });
@@ -293,7 +231,7 @@ const Map: React.FC = () => {
       setIsDragging((old) => {
         if (old) {
           setMapConfirm({
-            text: `Save "${busStop.name}" location`,
+            text: `Save "${busStop.name}" new location`,
             isLoading: false,
             actions: [
               {
@@ -317,6 +255,74 @@ const Map: React.FC = () => {
     };
   };
 
+  useEffect(() => {
+    if (dataStore.selectedBusStop === undefined || ui.mode !== "routes") {
+      setMapConfirm(undefined);
+      return;
+    }
+
+    const existsInRoute = dataStore.selectedRoute?.routeBusStops?.find(
+      (b) => b.busStop.id === dataStore.selectedBusStop!.id,
+    );
+    if (existsInRoute) {
+      setMapConfirm({
+        isLoading: false,
+        actions: [
+          {
+            text: "Remove From Route",
+            action: () => {
+              if (dataStore.selectedRoute?.id) {
+                void dataStore
+                  .removeBusStopFromRoute(
+                    dataStore.selectedRoute.id,
+                    dataStore.selectedBusStop!.id,
+                  )
+                  .then((r) => setMapConfirm(undefined));
+              }
+            },
+          },
+        ],
+        onCancel: () => {
+          setMapConfirm(undefined);
+          dataStore.setSelectedBusStopIdx();
+        },
+      });
+    } else if (dataStore.selectedRoute) {
+      setMapConfirm({
+        text: `Add stop "${dataStore.selectedBusStop.name}" to route "${dataStore.selectedRoute.name}"?`,
+        isLoading: false,
+        actions: [
+          {
+            text: "Add To Route",
+            action: () => {
+              if (dataStore.selectedRoute?.id) {
+                void dataStore
+                  .addBusStopToRoute(
+                    dataStore.selectedRoute.id,
+                    dataStore.selectedBusStop!.id,
+                  )
+                  .then((r) => setMapConfirm(undefined));
+              }
+            },
+          },
+          {
+            text: "New Route",
+            action: () => {
+              dataStore.setRouteForm({ name: "" });
+              setMapConfirm(undefined);
+            },
+          },
+        ],
+        onCancel: () => {
+          setMapConfirm(undefined);
+          dataStore.setSelectedBusStopIdx();
+        },
+      });
+    } else {
+      dataStore.setRouteForm({ name: "" });
+    }
+  }, [dataStore.selectedBusStop]);
+
   const infoBusStop = hoverBusStop ?? dataStore.selectedBusStop;
   const infoRoute = hoverRoute ?? dataStore.selectedRoute;
 
@@ -328,9 +334,11 @@ const Map: React.FC = () => {
             <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <p className="font-semibold">{infoBusStop.name}</p>
               <div>
-                {dataStore.busStopToRoute[infoBusStop.id]?.length && (
-                  <p className="text-xs">Used in routes</p>
-                )}
+                <p className="text-xs">
+                  {dataStore.busStopToRoute[infoBusStop.id]?.length
+                    ? "Used in routes"
+                    : "Not used in routes"}
+                </p>
                 {dataStore.busStopToRoute[infoBusStop.id]?.map((route) => (
                   <div key={route} className="text-right">
                     {route}
@@ -343,7 +351,11 @@ const Map: React.FC = () => {
             <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <p className="font-semibold">{infoRoute.name}</p>
               <div>
-                <p className="text-xs">Bus Stops:</p>
+                <p className="text-xs">
+                  {infoRoute.routeBusStops?.length > 0
+                    ? "Bus Stops:"
+                    : "No Bus Stops"}
+                </p>
                 {infoRoute.routeBusStops.map((busStop) => (
                   <div key={busStop.busStop.name} className="text-right">
                     {busStop.busStop.name}

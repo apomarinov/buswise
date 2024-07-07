@@ -40,6 +40,7 @@ type DataStoreContext = {
   showReportForRoute?: number;
   toggleShowReportForRoute: (routeId: number) => void;
   setShowReportForRoute: (routeId?: number) => void;
+  setSelectedBusStopById: (id: number) => void;
   routeStopIds: { [k in number]: number[] };
   getBusStopMetrics: (
     busStopId: number,
@@ -80,6 +81,7 @@ const Context = React.createContext<DataStoreContext>({
   showReportForRoute: undefined,
   toggleShowReportForRoute: (routeId: number) => true,
   setShowReportForRoute: (routeId?: number) => true,
+  setSelectedBusStopById: (id: number) => true,
   routeStopIds: [],
   getBusStopMetrics: (busStopId: number, total: boolean) => ({
     distance: 0,
@@ -221,6 +223,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         "Content-Type": "application/json",
       },
     });
+    setSelectedBusStopIdx(undefined);
     await fetchRoutes();
     setIsLoading(false);
   };
@@ -243,6 +246,13 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     void fetchBusStops();
     void fetchRoutes();
   }, []);
+
+  const setSelectedBusStopById = (id: number) => {
+    const idx = busStops.findIndex((b) => b.id === id);
+    if (idx > -1) {
+      setSelectedBusStopIdx(idx);
+    }
+  };
 
   const selectedBusStop =
     selectedBusStopIdx !== undefined ? busStops[selectedBusStopIdx] : undefined;
@@ -322,6 +332,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         removeBusStopFromRoute,
         getBusStopMetrics,
         busStopToRoute,
+        setSelectedBusStopById,
       }}
     >
       {children}

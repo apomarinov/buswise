@@ -244,43 +244,86 @@ const SideBar: React.FC = () => {
           </div>
         )}
         {config.map((cfg, idx) => (
-          <Button
+          <div
             key={idx + ui.mode}
-            size="sm"
-            className={cn(
-              "!text-gray-700 !font-normal !flex !justify-between !px-2 min-h-9",
-              activeItem === idx && "!font-semibold !text-gray-800",
-            )}
-            isActive={activeItem === idx}
-            onClick={cfg.onClick}
+            className="flex w-full flex-col gap-2 items-end"
           >
-            {cfg.name}
-            {Object.keys(cfg.actions).length > 0 &&
-              (!dataStore.showReportForRoute ||
-                (dataStore.showReportForRoute === cfg.id &&
-                  ui.mode === "routes")) && (
-                <div className="flex gap-1.5 items-center">
-                  {Object.keys(cfg.actions)
-                    .filter(
-                      (a) => a !== hiddenActions[idx] && a !== cfg.hiddenAction,
-                    )
-                    .map((key, aIdx) => {
-                      const action = key as SideBarItemActionType;
-                      const Icon = ActionIcons[action];
-                      return (
-                        <Icon
-                          key={key}
-                          onClickCapture={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            void cfg.actions[action]?.();
-                          }}
-                        />
-                      );
-                    })}
-                </div>
+            <Button
+              size="sm"
+              className={cn(
+                "!text-gray-700 !font-normal !flex !justify-between !px-2 min-h-9 w-full",
+                activeItem === idx && "!font-semibold !text-gray-800",
               )}
-          </Button>
+              isActive={activeItem === idx}
+              onClick={cfg.onClick}
+            >
+              {cfg.name}
+              {Object.keys(cfg.actions).length > 0 &&
+                (!dataStore.showReportForRoute ||
+                  (dataStore.showReportForRoute === cfg.id &&
+                    ui.mode === "routes")) && (
+                  <div className="flex gap-1.5 items-center">
+                    {Object.keys(cfg.actions)
+                      .filter(
+                        (a) =>
+                          a !== hiddenActions[idx] && a !== cfg.hiddenAction,
+                      )
+                      .map((key, aIdx) => {
+                        const action = key as SideBarItemActionType;
+                        const Icon = ActionIcons[action];
+                        return (
+                          <Icon
+                            key={key}
+                            onClickCapture={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              void cfg.actions[action]?.();
+                            }}
+                          />
+                        );
+                      })}
+                  </div>
+                )}
+            </Button>
+            {ui.mode === "routes" && cfg.id === dataStore.selectedRoute?.id && (
+              <div className="w-full flex flex-col gap-2 items-end">
+                {!dataStore.selectedRoute?.routeBusStops?.length && (
+                  <p className="text-center text-xs ml-6 bg-green-100 rounded-lg py-1 px-2 text-gray-700">
+                    Click a Bus Stop in the map to add to this route
+                  </p>
+                )}
+                {dataStore.selectedRoute?.routeBusStops?.map((busStop) => {
+                  return (
+                    <Button
+                      key={busStop.busStop.name}
+                      size="sm"
+                      isActive={
+                        dataStore.selectedBusStop?.id === busStop.busStopId
+                      }
+                      className={cn(
+                        "w-[90%] !text-gray-700 !font-normal !flex !justify-between !px-2 h-6 w-full",
+                      )}
+                      onClick={() =>
+                        dataStore.setSelectedBusStopById(busStop.busStopId)
+                      }
+                    >
+                      {busStop.busStop.name}
+                      <Delete
+                        onClick={() => {
+                          if (dataStore.selectedRoute?.id) {
+                            void dataStore.removeBusStopFromRoute(
+                              dataStore.selectedRoute.id,
+                              busStop.busStopId,
+                            );
+                          }
+                        }}
+                      />
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>
