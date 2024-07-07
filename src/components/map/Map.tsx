@@ -9,7 +9,10 @@ import { useUiController } from "app/contexts/UIController";
 import { env } from "app/env";
 import { colorFromString } from "app/helpers/string";
 import { type BusStop } from "app/server/bus-stops";
-import { type RouteBusStopWithData } from "app/server/routes";
+import {
+  type RouteBusStopWithData,
+  type RouteWithData,
+} from "app/server/routes";
 import GoogleMap, {
   type LatLngLiteral,
   type MapOptions,
@@ -64,6 +67,8 @@ const Map: React.FC = () => {
   const [mapConfirm, setMapConfirm] = useState<MapUiConfirmProps>();
   const [renderSeed, setRenderSeed] = useState(0);
   const [routePaths, setRoutePaths] = useState<google.maps.Polyline[]>([]);
+  const [hoverBusStop, setHoverBusStop] = useState<BusStop>();
+  const [hoverRoute, setHoverRoute] = useState<RouteWithData>();
 
   useEffect(() => {
     if (!map) {
@@ -91,6 +96,7 @@ const Map: React.FC = () => {
     idx: number,
     strokeColor: string,
     isHistory?: boolean,
+    route?: RouteWithData,
   ) => {
     const path: { lat: number; lng: number }[] = [];
     routeBusStops.forEach((busStop) => {
@@ -123,11 +129,13 @@ const Map: React.FC = () => {
     });
     line.addListener("mousemove", () => {
       line.setOptions({ strokeWeight: activeStrokeSize, zIndex: 2 });
+      setHoverRoute(route);
     });
     line.addListener("mouseout", () => {
       if (dataStore.selectedRouteIdx !== idx) {
         line.setOptions({ strokeWeight: 4, zIndex: 0 });
       }
+      setHoverRoute(undefined);
     });
     line.addListener("click", () => {
       line.setOptions({ strokeWeight: activeStrokeSize, zIndex: 1 });
@@ -165,6 +173,7 @@ const Map: React.FC = () => {
             idx,
             "rgba(232,102,102,1)",
             true,
+            route,
           ),
         );
       }
@@ -173,6 +182,8 @@ const Map: React.FC = () => {
           route.routeBusStops,
           idx,
           colorFromString(route.name),
+          false,
+          route,
         ),
       );
     });
@@ -306,9 +317,42 @@ const Map: React.FC = () => {
     };
   };
 
+  const infoBusStop = hoverBusStop ?? dataStore.selectedBusStop;
+  const infoRoute = hoverRoute ?? dataStore.selectedRoute;
+
   return (
     <div className="flex flex-grow flex-col max-sm:w-full">
-      <div className="p-2 flex flex-col gap-2" id="ui-top-right">
+      <div className="p-2 flex flex-col gap-2 items-end" id="ui-top-right">
+        <div className="flex gap-2">
+          {infoBusStop && (
+            <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+              <p className="font-semibold">{infoBusStop.name}</p>
+              <div>
+                {dataStore.busStopToRoute[infoBusStop.id]?.length && (
+                  <p className="text-xs">Used in routes</p>
+                )}
+                {dataStore.busStopToRoute[infoBusStop.id]?.map((route) => (
+                  <div key={route} className="text-right">
+                    {route}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {infoRoute && (
+            <div className="bg-white w-fit drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+              <p className="font-semibold">{infoRoute.name}</p>
+              <div>
+                <p className="text-xs">Bus Stops:</p>
+                {infoRoute.routeBusStops.map((busStop) => (
+                  <div key={busStop.busStop.name} className="text-right">
+                    {busStop.busStop.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         {mapConfirm && (
           <MapUiConfirm {...mapConfirm} isLoading={dataStore.isLoading} />
         )}
@@ -345,6 +389,8 @@ const Map: React.FC = () => {
 
           return (
             <MarkerBusStop
+              onHover={() => setHoverBusStop(busStop)}
+              onStopHover={() => setHoverBusStop(undefined)}
               stopName={busStop.name}
               distance={metrics.distance}
               travelTime={metrics.travelTime}

@@ -32,6 +32,7 @@ type DataStoreContext = {
   addBusStopToRoute: (routeId: number, busStopId: number) => Promise<void>;
   removeBusStopFromRoute: (routeId: number, busStopId: number) => Promise<void>;
   routeFirstStops: { [k in string]: number };
+  busStopToRoute: { [k in number]: string[] };
   deleteRoute: (id: number) => Promise<void>;
   visibleRoutes: number[];
   toggleVisibleRoute: (idx: number, show: boolean) => void;
@@ -84,6 +85,7 @@ const Context = React.createContext<DataStoreContext>({
     distance: 0,
     travelTime: 0,
   }),
+  busStopToRoute: {},
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -99,6 +101,9 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   const [routeForm, setRouteForm] = useState<RouteForm>();
   const [routeFirstStops, setRouteFirstStops] = useState<
     DataStoreContext["routeFirstStops"]
+  >({});
+  const [busStopToRoute, setBusStopToRoute] = useState<
+    DataStoreContext["busStopToRoute"]
   >({});
   const [routeStopIds, setRouteStopIds] = useState<
     DataStoreContext["routeStopIds"]
@@ -167,6 +172,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     );
     const newBusStopMap: typeof busStopToRouteBusStopMap = {};
     const newRouteMetrics: typeof routeMetrics = {};
+    const newBusStopToRoute: typeof busStopToRoute = {};
     data.forEach((route) => {
       newRouteMetrics[route.id] ||= {
         distance: 0,
@@ -177,8 +183,11 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         newBusStopMap[routeBusStop.busStopId]![route.id] = routeBusStop;
         newRouteMetrics[route.id]!.distance += routeBusStop.distance;
         newRouteMetrics[route.id]!.travelTime += routeBusStop.travelTime;
+        newBusStopToRoute[routeBusStop.busStopId] ||= [];
+        newBusStopToRoute[routeBusStop.busStopId]!.push(route.name);
       });
     });
+    setBusStopToRoute(newBusStopToRoute);
     setBusStopToRouteBusStopMap(newBusStopMap);
     setRouteMetrics(newRouteMetrics);
   };
@@ -312,6 +321,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         routeStopIds,
         removeBusStopFromRoute,
         getBusStopMetrics,
+        busStopToRoute,
       }}
     >
       {children}

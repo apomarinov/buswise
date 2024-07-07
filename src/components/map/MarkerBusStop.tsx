@@ -14,17 +14,19 @@ export type MarkerBusStopProps = {
   color?: string;
   onClick?: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
   onDrag?: (
-    e: React.MouseEvent<HTMLImageElement, MouseEvent>,
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
     props: { latLng: LatLngLiteral },
   ) => void;
   onDragEnd?: (
-    e: React.MouseEvent<HTMLImageElement, MouseEvent>,
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
     props: { latLng: LatLngLiteral },
   ) => void;
   onDragStart?: (
-    e: React.MouseEvent<HTMLImageElement, MouseEvent>,
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
     props: { latLng: LatLngLiteral },
   ) => void;
+  onHover?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  onStopHover?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   distance?: number;
   travelTime?: number;
   stopName: string;
@@ -38,6 +40,8 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
   distance,
   travelTime,
   stopName,
+  onHover,
+  onStopHover,
 }) => {
   const travelTimeText = moment()
     .from(moment().subtract(travelTime, "seconds"))
@@ -56,6 +60,8 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
 
   return (
     <div
+      onMouseEnter={onHover}
+      onMouseLeave={onStopHover}
       className={cn(
         "translate-y-[-40%] cursor-pointer rounded-full hover:bg-white p-1 relative",
         isSelected && "bg-white bg-opacity-80",

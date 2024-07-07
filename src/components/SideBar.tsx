@@ -228,8 +228,9 @@ const SideBar: React.FC = () => {
             key={idx}
             onClick={() => changeMode(modes[idx]!)}
             className={cn(
-              "flex w-1/2 text-sm items-center justify-center cursor-pointer hover:bg-gray-200 active:bg-gray-100",
-              ui.mode === modes[idx] && "font-semibold bg-gray-100",
+              "flex w-1/2 text-sm opacity-80 hover:opacity-100 items-center justify-center cursor-pointer hover:bg-gray-200 active:bg-gray-100",
+              ui.mode === modes[idx] &&
+                "font-semibold bg-gray-100 !opacity-100",
             )}
           >
             {tab}
