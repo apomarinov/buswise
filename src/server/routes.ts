@@ -127,8 +127,8 @@ const recalculateBusStopData = async (
       where: { id: firstRouteBusStop.id },
       data: {
         order: 1,
-        distance: null,
-        travelTime: null,
+        distance: 0,
+        travelTime: 0,
         geoPoints: undefined,
       },
     });
@@ -226,6 +226,8 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
     throw new Error("Invalid order provided");
   }
 
+  await saveHistory(route.id);
+
   // determine actions
   let toRemoveGeoFromId;
   let toUpdateGeo: (typeof fromBusStop)[] = [fromBusStop, toBusStop];
@@ -272,8 +274,8 @@ const reorderBusStop = async (data: ReorderBusStops): Promise<void> => {
       where: { id: toRemoveGeoFromId },
       data: {
         order: 1,
-        distance: null,
-        travelTime: null,
+        distance: 0,
+        travelTime: 0,
         geoPoints: [],
       },
     });

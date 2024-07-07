@@ -10,7 +10,7 @@ import Head from "next/head";
 import { useState } from "react";
 
 export default function Home() {
-  const [showUi, setShowUi] = useState(2);
+  const [showUi, setShowUi] = useState(0);
 
   return (
     <ChakraProvider>

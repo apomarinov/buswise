@@ -393,7 +393,11 @@ const Map: React.FC = () => {
             color = colorFromString(dataStore.selectedRoute?.name);
           }
           const isFirstStopInRoute =
-            !!dataStore.routeFirstStops[busStop.id] && ui.mode === "routes";
+            !!dataStore.routeFirstStops[busStop.id] &&
+            (dataStore.routeFirstStops[busStop.id] ===
+              dataStore.selectedRoute?.id ||
+              !dataStore.selectedRoute) &&
+            ui.mode === "routes";
           const metrics = dataStore.getBusStopMetrics(
             busStop.id,
             isFirstStopInRoute,

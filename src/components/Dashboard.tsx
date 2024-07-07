@@ -34,8 +34,9 @@ const Dashboard: React.FC = () => {
                   dataStore.selectedRoute.id,
                   data.id as number,
                 );
-              } else {
               }
+            } else {
+              void dataStore.fetchRoutes();
             }
           }}
         />

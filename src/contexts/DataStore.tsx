@@ -46,6 +46,12 @@ type DataStoreContext = {
     busStopId: number,
     total: boolean,
   ) => { distance: number; travelTime: number };
+  changeBusStopOrderInRoute: (
+    routeId: number,
+    busStopId: number,
+    from: number,
+    to: number,
+  ) => Promise<void>;
 };
 
 const Context = React.createContext<DataStoreContext>({
@@ -88,6 +94,12 @@ const Context = React.createContext<DataStoreContext>({
     travelTime: 0,
   }),
   busStopToRoute: {},
+  changeBusStopOrderInRoute: (
+    routeId: number,
+    busStopId: number,
+    from: number,
+    to: number,
+  ) => Promise.resolve(),
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -161,7 +173,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setRouteFirstStops(
       data.reduce((prev, curr) => {
         if (curr.routeBusStops?.[0]?.busStop.id) {
-          prev[curr.routeBusStops[0].busStop.id] = curr.name;
+          prev[curr.routeBusStops[0].busStop.id] = curr.id;
         }
         return prev;
       }, {} as any),
@@ -224,6 +236,24 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
       },
     });
     setSelectedBusStopIdx(undefined);
+    await fetchRoutes();
+    setIsLoading(false);
+  };
+
+  const changeBusStopOrderInRoute = async (
+    routeId: number,
+    busStopId: number,
+    from: number,
+    to: number,
+  ) => {
+    setIsLoading(true);
+    await api(`/route/${routeId}/bus-stop/${busStopId}`, {
+      method: "PUT",
+      body: JSON.stringify({ from, to }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
     await fetchRoutes();
     setIsLoading(false);
   };
@@ -333,6 +363,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         getBusStopMetrics,
         busStopToRoute,
         setSelectedBusStopById,
+        changeBusStopOrderInRoute,
       }}
     >
       {children}

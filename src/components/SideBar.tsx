@@ -1,5 +1,6 @@
 import { Button } from "@chakra-ui/react";
 import { api } from "app/api";
+import BusStopDraggable from "app/components/BusStopDraggable";
 import Delete from "app/components/Icons/Delete";
 import Edit from "app/components/Icons/Edit";
 import Eye from "app/components/Icons/Eye";
@@ -15,6 +16,8 @@ import { type Route, type RouteWithData } from "app/server/routes";
 import { type Mode } from "app/types/client";
 import cn from "classnames";
 import React, { useEffect, useState } from "react";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 type SideBarItemActionType = "edit" | "delete" | "show" | "report" | "hide";
 
@@ -152,6 +155,7 @@ const SideBar: React.FC = () => {
         name: route.name,
         onClick: () => {
           dataStore.toggleSelectedRouteIdx(idx);
+          dataStore.setSelectedBusStopIdx();
           setActiveItem((old) => (old === idx ? undefined : old));
           dataStore.setShowReportForRoute();
           toggleRouteViewIcon(idx, "show");
@@ -180,7 +184,8 @@ const SideBar: React.FC = () => {
             }),
           delete: async () => onDeleteRoute(route),
         },
-        hiddenAction: !!route.history ? undefined : "report",
+        hiddenAction:
+          (route.history?.data?.length ?? 0) > 1 ? undefined : "report",
       });
     });
     setHiddenActions(newHiddenActions);
@@ -285,44 +290,34 @@ const SideBar: React.FC = () => {
                   </div>
                 )}
             </Button>
-            {ui.mode === "routes" && cfg.id === dataStore.selectedRoute?.id && (
-              <div className="w-full flex flex-col gap-2 items-end">
-                {!dataStore.selectedRoute?.routeBusStops?.length && (
-                  <p className="text-center text-xs ml-6 bg-green-100 rounded-lg py-1 px-2 text-gray-700">
-                    Click a Bus Stop in the map to add to this route
-                  </p>
-                )}
-                {dataStore.selectedRoute?.routeBusStops?.map((busStop) => {
-                  return (
-                    <Button
-                      key={busStop.busStop.name}
-                      size="sm"
-                      isActive={
-                        dataStore.selectedBusStop?.id === busStop.busStopId
-                      }
-                      className={cn(
-                        "w-[90%] !text-gray-700 !font-normal !flex !justify-between !px-2 h-6 w-full",
-                      )}
-                      onClick={() =>
-                        dataStore.setSelectedBusStopById(busStop.busStopId)
-                      }
-                    >
-                      {busStop.busStop.name}
-                      <Delete
-                        onClick={() => {
-                          if (dataStore.selectedRoute?.id) {
-                            void dataStore.removeBusStopFromRoute(
-                              dataStore.selectedRoute.id,
-                              busStop.busStopId,
+            <DndProvider backend={HTML5Backend}>
+              {ui.mode === "routes" &&
+                cfg.id === dataStore.selectedRoute?.id && (
+                  <div className="w-full flex flex-col gap-2 items-end">
+                    {!dataStore.selectedRoute?.routeBusStops?.length && (
+                      <p className="text-center text-xs ml-6 bg-green-100 rounded-lg py-1 px-2 text-gray-700">
+                        Click a Bus Stop in the map to add to this route
+                      </p>
+                    )}
+                    {dataStore.selectedRoute?.routeBusStops?.map((busStop) => {
+                      return (
+                        <BusStopDraggable
+                          key={busStop.busStop.name}
+                          busStop={busStop}
+                          onDragEnd={(busStopId, fromOrder, toOrder) => {
+                            void dataStore.changeBusStopOrderInRoute(
+                              dataStore.selectedRoute!.id,
+                              busStopId,
+                              fromOrder,
+                              toOrder,
                             );
-                          }
-                        }}
-                      />
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+            </DndProvider>
           </div>
         ))}
       </div>
