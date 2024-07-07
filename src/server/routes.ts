@@ -129,7 +129,7 @@ const recalculateBusStopData = async (
         order: 1,
         distance: 0,
         travelTime: 0,
-        geoPoints: undefined,
+        geoPoints: [],
       },
     });
     return;
