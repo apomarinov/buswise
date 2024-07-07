@@ -60,6 +60,7 @@ const getById = async (id: number): Promise<Route | null> => {
 };
 
 const deleteById = async (id: number): Promise<void> => {
+  await db.routeBusStop.deleteMany({ where: { routeId: id } });
   await db.route.delete({ where: { id } });
 };
 
@@ -308,7 +309,7 @@ const recalculateMovedBusStopRoute = async (
           const previous = route.routeBusStops[j - 1]!;
           await updateBusStopRoute(moved.id, previous.busStop, moved.busStop);
         }
-        if (j < route.routeBusStops.length) {
+        if (j < route.routeBusStops.length - 1) {
           const next = route.routeBusStops[j + 1]!;
           await updateBusStopRoute(next.id, moved.busStop, next.busStop);
         }

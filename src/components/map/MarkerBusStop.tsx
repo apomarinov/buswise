@@ -10,6 +10,7 @@ export type MarkerBusStopProps = {
   lng: number;
   isFirstStopInRoute: boolean;
   isSelected: boolean;
+  color?: string;
   onClick?: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
   onDrag?: (
     e: React.MouseEvent<HTMLImageElement, MouseEvent>,
@@ -29,6 +30,7 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
   onClick,
   isSelected,
   isFirstStopInRoute,
+  color,
 }) => {
   return (
     <div
@@ -39,9 +41,9 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
       )}
     >
       {isFirstStopInRoute ? (
-        <Start onClick={onClick} color="#525252FF" />
+        <Start onClick={onClick} color={color ?? "#525252FF"} />
       ) : (
-        <BusStopIcon onClick={onClick} size={2.5} />
+        <BusStopIcon onClick={onClick} size={2.5} color={color} />
       )}
     </div>
   );

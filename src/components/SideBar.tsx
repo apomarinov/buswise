@@ -19,11 +19,13 @@ import React, { useEffect, useState } from "react";
 type SideBarItemActionType = "edit" | "delete" | "show" | "report" | "hide";
 
 type SideBarItem = {
+  id: number;
   name: string;
   onClick: () => void;
   actions: {
     [k in SideBarItemActionType]?: () => Promise<void>;
   };
+  hiddenAction?: SideBarItemActionType;
 };
 
 const ActionIcons: {
@@ -99,9 +101,10 @@ const SideBar: React.FC = () => {
     const newConfig: SideBarItem[] = [];
     dataStore.busStops.forEach((busStop, idx) => {
       newConfig.push({
+        id: busStop.id,
         name: busStop.name,
         onClick: () => {
-          dataStore.toggleBusStopIdx(idx);
+          dataStore.toggleSelectedBusStopIdx(idx);
           setActiveItem((old) => (old === idx ? undefined : old));
         },
         actions: {
@@ -116,12 +119,20 @@ const SideBar: React.FC = () => {
     );
   }, [dataStore.busStops, ui.mode]);
 
-  const toggleRoute = (idx: number, action: SideBarItemActionType) => {
+  const toggleRouteViewIcon = (
+    idx: number,
+    action: SideBarItemActionType,
+    only?: boolean,
+  ) => {
     setHiddenActions((old) => {
+      if (only) {
+        Object.keys(old).forEach((key) => {
+          old[key as unknown as number] = "hide";
+        });
+      }
       old[idx] = action;
       return { ...old };
     });
-    dataStore.toggleVisibleRoute(idx);
   };
 
   useEffect(() => {
@@ -134,15 +145,31 @@ const SideBar: React.FC = () => {
     dataStore.routes.forEach((route, idx) => {
       newHiddenActions[idx] = "hide";
       newConfig.push({
+        id: route.id,
         name: route.name,
         onClick: () => {
-          dataStore.toggleRouteIdx(idx);
+          dataStore.toggleSelectedRouteIdx(idx);
           setActiveItem((old) => (old === idx ? undefined : old));
+          dataStore.setShowReportForRoute();
+          toggleRouteViewIcon(idx, "show");
+          dataStore.toggleVisibleRoute(idx, true);
         },
         actions: {
-          show: async () => toggleRoute(idx, "show"),
-          hide: async () => toggleRoute(idx, "hide"),
-          report: async () => dataStore.toggleShowReportForRoute(route.id),
+          show: async () => {
+            toggleRouteViewIcon(idx, "show");
+            dataStore.toggleVisibleRoute(idx, true);
+          },
+          hide: async () => {
+            toggleRouteViewIcon(idx, "hide");
+            dataStore.toggleVisibleRoute(idx, false);
+            dataStore.setShowReportForRoute();
+          },
+          report: async () => {
+            dataStore.toggleShowReportForRoute(route.id);
+            dataStore.showOnlyRoute(idx);
+            toggleRouteViewIcon(idx, "show", true);
+            dataStore.setSelectedRouteIdx(idx);
+          },
           edit: async () =>
             dataStore.setRouteForm({
               id: route.id,
@@ -150,6 +177,7 @@ const SideBar: React.FC = () => {
             }),
           delete: async () => onDeleteRoute(route),
         },
+        hiddenAction: !!route.history ? undefined : "report",
       });
     });
     setHiddenActions(newHiddenActions);
@@ -172,6 +200,16 @@ const SideBar: React.FC = () => {
       setActiveItem(dataStore.selectedRouteIdx);
     }
   }, [dataStore.selectedBusStopIdx, dataStore.selectedRouteIdx]);
+
+  useEffect(() => {
+    if (
+      dataStore.selectedRouteIdx === 0 &&
+      dataStore.selectedRoute?.routeBusStops?.length === 1
+    ) {
+      toggleRouteViewIcon(0, "show");
+      dataStore.toggleVisibleRoute(0, true);
+    }
+  }, [dataStore.selectedRouteIdx, dataStore.selectedRoute]);
 
   return (
     <div className="flex relative drop-shadow-md flex-col bg-white max-w-[25%] min-w-[200px] max-sm:min-w-full max-sm:absolute top-0 left-0 max-sm:h-full z-[2]">
@@ -213,25 +251,31 @@ const SideBar: React.FC = () => {
             onClick={cfg.onClick}
           >
             {cfg.name}
-            {Object.keys(cfg.actions).length > 0 && (
-              <div className="flex gap-1.5 items-center">
-                {Object.keys(cfg.actions)
-                  .filter((a) => a !== hiddenActions[idx])
-                  .map((key, aIdx) => {
-                    const action = key as SideBarItemActionType;
-                    const Icon = ActionIcons[action];
-                    return (
-                      <Icon
-                        key={key}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void cfg.actions[action]?.();
-                        }}
-                      />
-                    );
-                  })}
-              </div>
-            )}
+            {Object.keys(cfg.actions).length > 0 &&
+              (!dataStore.showReportForRoute ||
+                (dataStore.showReportForRoute === cfg.id &&
+                  ui.mode === "routes")) && (
+                <div className="flex gap-1.5 items-center">
+                  {Object.keys(cfg.actions)
+                    .filter(
+                      (a) => a !== hiddenActions[idx] && a !== cfg.hiddenAction,
+                    )
+                    .map((key, aIdx) => {
+                      const action = key as SideBarItemActionType;
+                      const Icon = ActionIcons[action];
+                      return (
+                        <Icon
+                          key={key}
+                          onClickCapture={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            void cfg.actions[action]?.();
+                          }}
+                        />
+                      );
+                    })}
+                </div>
+              )}
           </Button>
         ))}
       </div>

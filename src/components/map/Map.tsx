@@ -90,12 +90,12 @@ const Map: React.FC = () => {
     routeBusStops: RouteBusStopWithData[],
     idx: number,
     strokeColor: string,
-    showFirst?: boolean,
+    isHistory?: boolean,
   ) => {
     const path: { lat: number; lng: number }[] = [];
     routeBusStops.forEach((busStop) => {
       if (!busStop.geoPoints) {
-        if (showFirst) {
+        if (!isHistory) {
           path.push({
             lat: parseFloat(busStop.busStop.latitude.toString()),
             lng: parseFloat(busStop.busStop.longitude.toString()),
@@ -111,17 +111,18 @@ const Map: React.FC = () => {
       );
     });
 
+    const activeStrokeSize = isHistory ? 11 : 7;
     const line = new google.maps.Polyline({
       path,
       map,
       geodesic: true,
       strokeColor,
       strokeOpacity: 1.0,
-      strokeWeight: dataStore.selectedRouteIdx === idx ? 7 : 4,
+      strokeWeight: dataStore.selectedRouteIdx === idx ? activeStrokeSize : 4,
       zIndex: dataStore.selectedRouteIdx === idx ? 2 : 0,
     });
     line.addListener("mousemove", () => {
-      line.setOptions({ strokeWeight: 7, zIndex: 2 });
+      line.setOptions({ strokeWeight: activeStrokeSize, zIndex: 2 });
     });
     line.addListener("mouseout", () => {
       if (dataStore.selectedRouteIdx !== idx) {
@@ -129,7 +130,7 @@ const Map: React.FC = () => {
       }
     });
     line.addListener("click", () => {
-      line.setOptions({ strokeWeight: 7, zIndex: 1 });
+      line.setOptions({ strokeWeight: activeStrokeSize, zIndex: 1 });
       dataStore.setSelectedRouteIdx(idx);
     });
 
@@ -159,7 +160,12 @@ const Map: React.FC = () => {
 
       if (dataStore.showReportForRoute === route.id && route.history) {
         newPaths.push(
-          getPolylineFromRouteBusStops(route.history.data, idx, "#ee5f5f"),
+          getPolylineFromRouteBusStops(
+            route.history.data,
+            idx,
+            "rgba(232,102,102,1)",
+            true,
+          ),
         );
       }
       newPaths.push(
@@ -167,7 +173,6 @@ const Map: React.FC = () => {
           route.routeBusStops,
           idx,
           colorFromString(route.name),
-          true,
         ),
       );
     });
@@ -200,6 +205,11 @@ const Map: React.FC = () => {
             setMapConfirm({
               text: `Add stop "${busStop.name}" to route "${dataStore.selectedRoute.name}"?`,
               isLoading: false,
+              btnText: "Add To Route",
+              onNew: () => {
+                dataStore.setRouteForm({ name: "" });
+                setMapConfirm(undefined);
+              },
               onConfirm: () => {
                 if (dataStore.selectedRoute?.id) {
                   void dataStore
@@ -207,7 +217,10 @@ const Map: React.FC = () => {
                     .then((r) => setMapConfirm(undefined));
                 }
               },
-              onCancel: () => setMapConfirm(undefined),
+              onCancel: () => {
+                setMapConfirm(undefined);
+                dataStore.setSelectedBusStopIdx();
+              },
             });
           } else {
             dataStore.setRouteForm({ name: "" });
@@ -240,6 +253,7 @@ const Map: React.FC = () => {
           setMapConfirm({
             text: `Save "${busStop.name}" location`,
             isLoading: false,
+            btnText: "Save",
             onConfirm: () =>
               saveStop({
                 ...busStop,
@@ -277,21 +291,33 @@ const Map: React.FC = () => {
           );
         }}
       >
-        {dataStore.busStops.map((busStop, idx) => (
-          <MarkerBusStop
-            key={idx + renderSeed}
-            isFirstStopInRoute={
-              !!dataStore.routeFirstStops[busStop.id] && ui.mode === "routes"
-            }
-            isSelected={dataStore.selectedBusStopIdx === idx}
-            lat={busStop.latitude}
-            lng={busStop.longitude}
-            onClick={(e) => onBusStopClick(e, idx, busStop)} // you need to manage this prop on your Marker component!
-            draggable
-            onDrag={onBusStopDrag}
-            onDragEnd={onBusStopDragEnd(busStop)}
-          />
-        ))}
+        {dataStore.busStops.map((busStop, idx) => {
+          let color;
+          if (
+            dataStore.selectedRoute &&
+            dataStore.routeStopIds[dataStore.selectedRoute.id]?.includes(
+              busStop.id,
+            )
+          ) {
+            color = colorFromString(dataStore.selectedRoute?.name);
+          }
+          return (
+            <MarkerBusStop
+              key={idx + renderSeed}
+              color={color}
+              isFirstStopInRoute={
+                !!dataStore.routeFirstStops[busStop.id] && ui.mode === "routes"
+              }
+              isSelected={dataStore.selectedBusStopIdx === idx}
+              lat={busStop.latitude}
+              lng={busStop.longitude}
+              onClick={(e) => onBusStopClick(e, idx, busStop)} // you need to manage this prop on your Marker component!
+              draggable
+              onDrag={onBusStopDrag}
+              onDragEnd={onBusStopDragEnd(busStop)}
+            />
+          );
+        })}
       </GoogleMap>
     </div>
   );

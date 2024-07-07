@@ -14,7 +14,7 @@ export const sumCharactersToNumber = (str: string) =>
 
 export const colorFromString = (str?: string) => {
   if (!str) return "";
-  return `hsl(${sumCharactersToNumber(md5(str)) % 360}, 70%, 60%)`;
+  return `hsl(${sumCharactersToNumber(md5(str)) % 300}, 70%, 60%)`;
 };
 
 export async function sleep(ms: number) {

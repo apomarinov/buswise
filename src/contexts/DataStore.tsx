@@ -14,7 +14,7 @@ type DataStoreContext = {
   busStops: BusStop[];
   selectedBusStopIdx?: number;
   setSelectedBusStopIdx: (idx?: number) => void;
-  toggleBusStopIdx: (idx?: number) => void;
+  toggleSelectedBusStopIdx: (idx?: number) => void;
   selectedBusStop?: BusStop;
   deleteBusStop: (id: number) => Promise<void>;
   updateBusStop: (busStop: BusStop) => Promise<void>;
@@ -22,7 +22,7 @@ type DataStoreContext = {
   fetchRoutes: () => Promise<void>;
   selectedRouteIdx?: number;
   setSelectedRouteIdx: (idx?: number) => void;
-  toggleRouteIdx: (idx?: number) => void;
+  toggleSelectedRouteIdx: (idx?: number) => void;
   selectedRoute?: RouteWithData;
   routeForm?: RouteForm;
   setRouteForm: (route?: RouteForm) => void;
@@ -30,9 +30,12 @@ type DataStoreContext = {
   routeFirstStops: { [k in string]: number };
   deleteRoute: (id: number) => Promise<void>;
   visibleRoutes: number[];
-  toggleVisibleRoute: (idx: number) => void;
+  toggleVisibleRoute: (idx: number, show: boolean) => void;
+  showOnlyRoute: (idx: number) => void;
   showReportForRoute?: number;
   toggleShowReportForRoute: (routeId: number) => void;
+  setShowReportForRoute: (routeId?: number) => void;
+  routeStopIds: { [k in number]: number[] };
 };
 
 const Context = React.createContext<DataStoreContext>({
@@ -45,7 +48,7 @@ const Context = React.createContext<DataStoreContext>({
   busStops: [],
   selectedBusStopIdx: undefined,
   setSelectedBusStopIdx: (idx?: number) => true,
-  toggleBusStopIdx: (idx?: number) => true,
+  toggleSelectedBusStopIdx: (idx?: number) => true,
   selectedBusStop: undefined,
   deleteBusStop: (id: number) => Promise.resolve(),
   updateBusStop: (busStop: BusStop) => Promise.resolve(),
@@ -53,7 +56,7 @@ const Context = React.createContext<DataStoreContext>({
   fetchRoutes: () => Promise.resolve(),
   selectedRouteIdx: undefined,
   setSelectedRouteIdx: (idx?: number) => true,
-  toggleRouteIdx: (idx?: number) => true,
+  toggleSelectedRouteIdx: (idx?: number) => true,
   selectedRoute: undefined,
   routeForm: undefined,
   setRouteForm: (route?: RouteForm) => true,
@@ -61,9 +64,12 @@ const Context = React.createContext<DataStoreContext>({
   routeFirstStops: {},
   deleteRoute: (id: number) => Promise.resolve(),
   visibleRoutes: [],
-  toggleVisibleRoute: (idx: number) => true,
+  toggleVisibleRoute: (idx: number, show: boolean) => true,
+  showOnlyRoute: (idx: number) => true,
   showReportForRoute: undefined,
   toggleShowReportForRoute: (routeId: number) => true,
+  setShowReportForRoute: (routeId?: number) => true,
+  routeStopIds: [],
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -79,6 +85,9 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   const [routeForm, setRouteForm] = useState<RouteForm>();
   const [routeFirstStops, setRouteFirstStops] = useState<
     DataStoreContext["routeFirstStops"]
+  >({});
+  const [routeStopIds, setRouteStopIds] = useState<
+    DataStoreContext["routeStopIds"]
   >({});
   const [visibleRoutes, setVisibleRoutes] = useState<number[]>([]);
   const [showReportForRoute, setShowReportForRoute] = useState<number>();
@@ -124,6 +133,12 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         return prev;
       }, {} as any),
     );
+    setRouteStopIds(
+      data.reduce((prev, curr) => {
+        prev[curr.id] = curr.routeBusStops.map((b) => b.busStopId);
+        return prev;
+      }, {} as any),
+    );
   };
 
   const deleteRoute = async (id: number) => {
@@ -146,14 +161,18 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setIsLoading(false);
   };
 
-  const toggleVisibleRoute = (idx: number) => {
-    const visible = visibleRoutes.indexOf(idx);
-    if (visible >= 0) {
-      visibleRoutes.splice(visible, 1);
-    } else {
-      visibleRoutes.push(idx);
-    }
-    setVisibleRoutes([...visibleRoutes]);
+  const toggleVisibleRoute = (idx: number, show: boolean) => {
+    setVisibleRoutes((old) => {
+      if (!show) {
+        const visible = old.indexOf(idx);
+        if (visible >= 0) {
+          old.splice(visible, 1);
+        }
+      } else {
+        old.push(idx);
+      }
+      return [...new Set(old)];
+    });
   };
 
   useEffect(() => {
@@ -167,14 +186,16 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   const selectedRoute =
     selectedRouteIdx !== undefined ? routes[selectedRouteIdx] : undefined;
 
-  const toggleRouteIdx = (v?: number) =>
+  const toggleSelectedRouteIdx = (v?: number) =>
     setSelectedRouteIdx((old) => (v === old ? undefined : v));
 
-  const toggleBusStopIdx = (v?: number) =>
+  const toggleSelectedBusStopIdx = (v?: number) =>
     setSelectedBusStopIdx((old) => (v === old ? undefined : v));
 
   const toggleShowReportForRoute = (v: number) =>
     setShowReportForRoute((old) => (v === old ? undefined : v));
+
+  const showOnlyRoute = (idx: number) => setVisibleRoutes([idx]);
 
   return (
     <Context.Provider
@@ -195,8 +216,8 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         fetchRoutes,
         selectedRouteIdx,
         setSelectedRouteIdx,
-        toggleRouteIdx,
-        toggleBusStopIdx,
+        toggleSelectedRouteIdx,
+        toggleSelectedBusStopIdx,
         selectedRoute,
         routeForm,
         setRouteForm,
@@ -207,6 +228,9 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         toggleVisibleRoute,
         showReportForRoute,
         toggleShowReportForRoute,
+        showOnlyRoute,
+        setShowReportForRoute,
+        routeStopIds,
       }}
     >
       {children}

@@ -12,7 +12,7 @@ const Dashboard: React.FC = () => {
   let newBusStopTitle = "Bus Stop";
   if (dataStore.selectedRoute) {
     newBusStopTitle =
-      'Add bus stop to route "' + dataStore.selectedRoute.name + '"';
+      'Add new bus stop to route "' + dataStore.selectedRoute.name + '"';
   }
 
   return (

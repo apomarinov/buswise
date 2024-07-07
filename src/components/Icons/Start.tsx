@@ -8,10 +8,10 @@ type Props = {
 const Start: React.FC<Props> = ({ size, cls, ...rest }) => {
   return (
     <svg
-      stroke="currentColor"
+      stroke="#525252FF"
       fill="currentColor"
       viewBox="0 0 24 24"
-      strokeWidth="0"
+      strokeWidth="1"
       height={`${size ?? 2}rem`}
       width={`${size ?? 2}rem`}
       className={cls}

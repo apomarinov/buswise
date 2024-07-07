@@ -33,7 +33,7 @@ model Route {
 model RouteHistory {
   id      Int   @id @default(autoincrement())
   routeId Int   @unique
-  route   Route @relation(fields: [routeId], references: [id])
+  route   Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
   data    Json
 
   @@index([routeId])
