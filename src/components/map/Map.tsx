@@ -200,23 +200,54 @@ const Map: React.FC = () => {
             (b) => b.busStop.id === busStop.id,
           );
           if (existsInRoute) {
-            console.log("show info");
+            setMapConfirm({
+              isLoading: false,
+              actions: [
+                {
+                  text: "Remove From Route",
+                  action: () => {
+                    if (dataStore.selectedRoute?.id) {
+                      void dataStore
+                        .removeBusStopFromRoute(
+                          dataStore.selectedRoute.id,
+                          busStop.id,
+                        )
+                        .then((r) => setMapConfirm(undefined));
+                    }
+                  },
+                },
+              ],
+              onCancel: () => {
+                setMapConfirm(undefined);
+                dataStore.setSelectedBusStopIdx();
+              },
+            });
           } else if (dataStore.selectedRoute) {
             setMapConfirm({
               text: `Add stop "${busStop.name}" to route "${dataStore.selectedRoute.name}"?`,
               isLoading: false,
-              btnText: "Add To Route",
-              onNew: () => {
-                dataStore.setRouteForm({ name: "" });
-                setMapConfirm(undefined);
-              },
-              onConfirm: () => {
-                if (dataStore.selectedRoute?.id) {
-                  void dataStore
-                    .addBusStopToRoute(dataStore.selectedRoute.id, busStop.id)
-                    .then((r) => setMapConfirm(undefined));
-                }
-              },
+              actions: [
+                {
+                  text: "Add To Route",
+                  action: () => {
+                    if (dataStore.selectedRoute?.id) {
+                      void dataStore
+                        .addBusStopToRoute(
+                          dataStore.selectedRoute.id,
+                          busStop.id,
+                        )
+                        .then((r) => setMapConfirm(undefined));
+                    }
+                  },
+                },
+                {
+                  text: "New Route",
+                  action: () => {
+                    dataStore.setRouteForm({ name: "" });
+                    setMapConfirm(undefined);
+                  },
+                },
+              ],
               onCancel: () => {
                 setMapConfirm(undefined);
                 dataStore.setSelectedBusStopIdx();
@@ -253,13 +284,17 @@ const Map: React.FC = () => {
           setMapConfirm({
             text: `Save "${busStop.name}" location`,
             isLoading: false,
-            btnText: "Save",
-            onConfirm: () =>
-              saveStop({
-                ...busStop,
-                latitude: latLng.lat,
-                longitude: latLng.lng,
-              }),
+            actions: [
+              {
+                text: "Save",
+                action: () =>
+                  saveStop({
+                    ...busStop,
+                    latitude: latLng.lat,
+                    longitude: latLng.lng,
+                  }),
+              },
+            ],
             onCancel: () => {
               setRenderSeed((old) => old + 1);
               setMapConfirm(undefined);

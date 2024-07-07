@@ -27,11 +27,12 @@ type DataStoreContext = {
   routeForm?: RouteForm;
   setRouteForm: (route?: RouteForm) => void;
   addBusStopToRoute: (routeId: number, busStopId: number) => Promise<void>;
+  removeBusStopFromRoute: (routeId: number, busStopId: number) => Promise<void>;
   routeFirstStops: { [k in string]: number };
   deleteRoute: (id: number) => Promise<void>;
   visibleRoutes: number[];
   toggleVisibleRoute: (idx: number, show: boolean) => void;
-  showOnlyRoute: (idx: number) => void;
+  showOnlyRoute: (idx?: number) => void;
   showReportForRoute?: number;
   toggleShowReportForRoute: (routeId: number) => void;
   setShowReportForRoute: (routeId?: number) => void;
@@ -61,11 +62,13 @@ const Context = React.createContext<DataStoreContext>({
   routeForm: undefined,
   setRouteForm: (route?: RouteForm) => true,
   addBusStopToRoute: (routeId: number, busStopId: number) => Promise.resolve(),
+  removeBusStopFromRoute: (routeId: number, busStopId: number) =>
+    Promise.resolve(),
   routeFirstStops: {},
   deleteRoute: (id: number) => Promise.resolve(),
   visibleRoutes: [],
   toggleVisibleRoute: (idx: number, show: boolean) => true,
-  showOnlyRoute: (idx: number) => true,
+  showOnlyRoute: (idx?: number) => true,
   showReportForRoute: undefined,
   toggleShowReportForRoute: (routeId: number) => true,
   setShowReportForRoute: (routeId?: number) => true,
@@ -103,6 +106,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setIsLoading(true);
     await api(`/bus-stop/${id}`, { method: "DELETE" });
     await fetchBusStops();
+    await fetchRoutes();
     setIsLoading(false);
   };
 
@@ -161,6 +165,19 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setIsLoading(false);
   };
 
+  const removeBusStopFromRoute = async (routeId: number, busStopId: number) => {
+    setIsLoading(true);
+    await api(`/route/${routeId}/bus-stop/${busStopId}`, {
+      method: "DELETE",
+      body: JSON.stringify({ busStopId }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    await fetchRoutes();
+    setIsLoading(false);
+  };
+
   const toggleVisibleRoute = (idx: number, show: boolean) => {
     setVisibleRoutes((old) => {
       if (!show) {
@@ -195,7 +212,9 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   const toggleShowReportForRoute = (v: number) =>
     setShowReportForRoute((old) => (v === old ? undefined : v));
 
-  const showOnlyRoute = (idx: number) => setVisibleRoutes([idx]);
+  const showOnlyRoute = (idx?: number) => {
+    setVisibleRoutes([idx].filter((i) => i! >= 0) as number[]);
+  };
 
   return (
     <Context.Provider
@@ -231,6 +250,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         showOnlyRoute,
         setShowReportForRoute,
         routeStopIds,
+        removeBusStopFromRoute,
       }}
     >
       {children}

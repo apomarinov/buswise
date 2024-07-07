@@ -2,43 +2,36 @@ import { Button } from "@chakra-ui/react";
 import React from "react";
 
 export type MapUiConfirmProps = {
-  text: string;
-  btnText: string;
+  text?: string;
   isLoading: boolean;
-  onConfirm: () => void;
-  onNew?: () => void;
+  actions: {
+    text: string;
+    action: () => void;
+  }[];
   onCancel: () => void;
 };
 
 const MapUiConfirm: React.FC<MapUiConfirmProps> = ({
   text,
-  btnText,
-  onConfirm,
   onCancel,
-  onNew,
   isLoading,
+  actions,
 }) => {
   return (
     <div className="bg-white drop-shadow-md rounded-lg p-2 flex flex-col gap-2">
-      <p className="text-[13px]">{text}</p>
-      <Button
-        size="sm"
-        className="!text-gray-700"
-        isLoading={isLoading}
-        onClick={onConfirm}
-      >
-        {btnText}
-      </Button>
-      {onNew && (
+      {text && <p className="text-[13px]">{text}</p>}
+      {actions.map((cfg) => (
         <Button
+          key={cfg.text}
           size="sm"
           className="!text-gray-700"
           isLoading={isLoading}
-          onClick={onNew}
+          onClick={cfg.action}
         >
-          New Route
+          {cfg.text}
         </Button>
-      )}
+      ))}
+
       <Button
         size="sm"
         colorScheme="yellow"

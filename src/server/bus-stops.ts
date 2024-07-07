@@ -62,7 +62,6 @@ const getById = async (id: number): Promise<BusStop> => {
 };
 
 const deleteById = async (id: number): Promise<void> => {
-  // TODO: handle dependencies
   await db.busStop.delete({ where: { id } });
 };
 

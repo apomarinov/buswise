@@ -33,6 +33,13 @@ export default handler(async (req: NextApiRequest, res: NextApiResponse) => {
 
   if (req.method === "DELETE") {
     const id = z.coerce.number().parse(req.query.id);
+    const routeList = await routes.getByBusStopId(id);
+    for (const route of routeList) {
+      await routes.removeBusStop({
+        routeId: route.id,
+        busStopId: id,
+      });
+    }
     await busStops.deleteById(id);
     response.success(res);
     return;

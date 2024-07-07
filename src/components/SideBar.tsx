@@ -56,6 +56,8 @@ const SideBar: React.FC = () => {
     setActiveItem(undefined);
     dataStore.setSelectedBusStopIdx();
     dataStore.setSelectedRouteIdx();
+    dataStore.showOnlyRoute();
+    dataStore.setShowReportForRoute();
   };
 
   const onDeleteBusStop = async (busStop: BusStop) => {
@@ -143,7 +145,8 @@ const SideBar: React.FC = () => {
     const newHiddenActions: typeof hiddenActions = {};
 
     dataStore.routes.forEach((route, idx) => {
-      newHiddenActions[idx] = "hide";
+      newHiddenActions[idx] =
+        dataStore.selectedRoute?.id === route.id ? "show" : "hide";
       newConfig.push({
         id: route.id,
         name: route.name,

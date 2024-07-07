@@ -83,6 +83,7 @@ const addBusStop = async (data: RouteBusStopQuery): Promise<RouteBusStop> => {
   if (existing) {
     throw new Error("Bus stop already added to route");
   }
+  await saveHistory(route.id);
 
   const newRouteBusStop: Prisma.RouteBusStopUncheckedCreateInput = {
     routeId: data.routeId,
@@ -159,6 +160,7 @@ const recalculateBusStopData = async (
 
 const removeBusStop = async (data: RouteBusStopQuery): Promise<void> => {
   await db.$transaction(async (tx) => {
+    await saveHistory(data.routeId);
     const routeBusStop = await tx.routeBusStop.findFirstOrThrow({
       where: { routeId: data.routeId, busStopId: data.busStopId },
     });
@@ -287,6 +289,29 @@ const getByBusStopId = async (busStopId: number): Promise<Route[]> => {
   ).map((b) => b.route);
 };
 
+const saveHistory = async (id: number) => {
+  const route = await db.route.findUniqueOrThrow({
+    where: { id },
+    include: {
+      routeBusStops: {
+        include: { busStop: true },
+        orderBy: { order: "asc" },
+      },
+    },
+  });
+  await db.routeHistory.upsert({
+    where: { routeId: route.id },
+    create: {
+      routeId: route.id,
+      data: route.routeBusStops,
+    },
+    update: {
+      routeId: route.id,
+      data: route.routeBusStops,
+    },
+  });
+};
+
 const recalculateMovedBusStopRoute = async (
   busStopId: number,
 ): Promise<void> => {
@@ -295,7 +320,7 @@ const recalculateMovedBusStopRoute = async (
       routeBusStops: { some: { busStopId } },
     },
     include: {
-      routeBusStops: { include: { busStop: true } },
+      routeBusStops: { include: { busStop: true }, orderBy: { order: "asc" } },
     },
   });
 
@@ -347,6 +372,7 @@ const exports = {
   reorderBusStop,
   getByBusStopId,
   recalculateMovedBusStopRoute,
+  saveHistory,
 };
 
 export default exports;
