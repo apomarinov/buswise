@@ -336,13 +336,21 @@ const Map: React.FC = () => {
           ) {
             color = colorFromString(dataStore.selectedRoute?.name);
           }
+          const isFirstStopInRoute =
+            !!dataStore.routeFirstStops[busStop.id] && ui.mode === "routes";
+          const metrics = dataStore.getBusStopMetrics(
+            busStop.id,
+            isFirstStopInRoute,
+          );
+
           return (
             <MarkerBusStop
+              stopName={busStop.name}
+              distance={metrics.distance}
+              travelTime={metrics.travelTime}
               key={idx + renderSeed}
               color={color}
-              isFirstStopInRoute={
-                !!dataStore.routeFirstStops[busStop.id] && ui.mode === "routes"
-              }
+              isFirstStopInRoute={isFirstStopInRoute}
               isSelected={dataStore.selectedBusStopIdx === idx}
               lat={busStop.latitude}
               lng={busStop.longitude}

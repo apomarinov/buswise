@@ -47,8 +47,8 @@ model RouteBusStop {
   busStopId  Int
   busStop    BusStop @relation(fields: [busStopId], references: [id])
   order      Int
-  distance   Int?
-  travelTime Int?
+  distance   Int     @default(0)
+  travelTime Int     @default(0)
   geoPoints  Json?
 
   @@unique([routeId, busStopId])

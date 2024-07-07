@@ -1,6 +1,9 @@
 import { api } from "app/api";
 import { type BusStop } from "app/server/bus-stops";
-import { type RouteWithData } from "app/server/routes";
+import {
+  type RouteBusStopWithData,
+  type RouteWithData,
+} from "app/server/routes";
 import { type RouteForm } from "app/types/client";
 import React, { useEffect, useState, type PropsWithChildren } from "react";
 
@@ -37,6 +40,10 @@ type DataStoreContext = {
   toggleShowReportForRoute: (routeId: number) => void;
   setShowReportForRoute: (routeId?: number) => void;
   routeStopIds: { [k in number]: number[] };
+  getBusStopMetrics: (
+    busStopId: number,
+    total: boolean,
+  ) => { distance: number; travelTime: number };
 };
 
 const Context = React.createContext<DataStoreContext>({
@@ -73,6 +80,10 @@ const Context = React.createContext<DataStoreContext>({
   toggleShowReportForRoute: (routeId: number) => true,
   setShowReportForRoute: (routeId?: number) => true,
   routeStopIds: [],
+  getBusStopMetrics: (busStopId: number, total: boolean) => ({
+    distance: 0,
+    travelTime: 0,
+  }),
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -94,6 +105,17 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
   >({});
   const [visibleRoutes, setVisibleRoutes] = useState<number[]>([]);
   const [showReportForRoute, setShowReportForRoute] = useState<number>();
+  const [busStopToRouteBusStopMap, setBusStopToRouteBusStopMap] = useState<{
+    [k in number]: {
+      [k in number]: RouteBusStopWithData;
+    };
+  }>({});
+  const [routeMetrics, setRouteMetrics] = useState<{
+    [k in number]: {
+      distance: number;
+      travelTime: number;
+    };
+  }>({});
 
   const fetchBusStops = async () => {
     setIsLoading(true);
@@ -143,6 +165,22 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         return prev;
       }, {} as any),
     );
+    const newBusStopMap: typeof busStopToRouteBusStopMap = {};
+    const newRouteMetrics: typeof routeMetrics = {};
+    data.forEach((route) => {
+      newRouteMetrics[route.id] ||= {
+        distance: 0,
+        travelTime: 0,
+      };
+      route.routeBusStops.forEach((routeBusStop) => {
+        newBusStopMap[routeBusStop.busStopId] ||= {};
+        newBusStopMap[routeBusStop.busStopId]![route.id] = routeBusStop;
+        newRouteMetrics[route.id]!.distance += routeBusStop.distance;
+        newRouteMetrics[route.id]!.travelTime += routeBusStop.travelTime;
+      });
+    });
+    setBusStopToRouteBusStopMap(newBusStopMap);
+    setRouteMetrics(newRouteMetrics);
   };
 
   const deleteRoute = async (id: number) => {
@@ -216,6 +254,28 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setVisibleRoutes([idx].filter((i) => i! >= 0) as number[]);
   };
 
+  const getBusStopMetrics = (
+    busStopId: number,
+    total: boolean,
+  ): { distance: number; travelTime: number } => {
+    if (!selectedRoute) {
+      return { distance: 0, travelTime: 0 };
+    }
+    let distance;
+    let travelTime;
+    if (total) {
+      distance = routeMetrics[selectedRoute.id]!.distance;
+      travelTime = routeMetrics[selectedRoute.id]!.travelTime;
+    } else {
+      distance =
+        busStopToRouteBusStopMap[busStopId]?.[selectedRoute.id]?.distance ?? 0;
+      travelTime =
+        busStopToRouteBusStopMap[busStopId]?.[selectedRoute.id]?.travelTime ??
+        0;
+    }
+    return { distance, travelTime };
+  };
+
   return (
     <Context.Provider
       value={{
@@ -251,6 +311,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         setShowReportForRoute,
         routeStopIds,
         removeBusStopFromRoute,
+        getBusStopMetrics,
       }}
     >
       {children}
