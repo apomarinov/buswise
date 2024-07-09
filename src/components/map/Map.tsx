@@ -5,6 +5,7 @@ import MapUiConfirm, {
 import MarkerBusStop, {
   type MarkerBusStopProps,
 } from "app/components/map/MarkerBusStop";
+import MarkerCluster from "app/components/map/MarkerCluster";
 import { useDataStore } from "app/contexts/DataStore";
 import { useUiController } from "app/contexts/UIController";
 import { env } from "app/env";
@@ -19,16 +20,17 @@ import GoogleMap, {
   type MapOptions,
 } from "google-maps-react-markers";
 import React, { useEffect, useState } from "react";
+import useSupercluster from "use-supercluster";
 
 const mapOptions: MapOptions = {
   center: {
-    lat: 42.697059524078185,
-    lng: 23.321707656774702,
+    lat: 33.96878271057514,
+    lng: -118.16866256315598,
   },
   draggableCursor: "default",
   draggingCursor: "default",
-  zoom: 13,
-  minZoom: 10,
+  zoom: 9,
+  minZoom: 9,
   fullscreenControl: false,
   streetViewControl: false,
   zoomControl: false,
@@ -66,11 +68,18 @@ const Map: React.FC = () => {
   const [map, setMap] = useState<google.maps.Map>();
   const [isDragging, setIsDragging] = useState(false);
   const [showBusStops, setShowBusStops] = useState(true);
+  const [showNonRouteBusStops, setShowNonRouteBusStops] = useState(false);
   const [mapConfirm, setMapConfirm] = useState<MapUiConfirmProps>();
   const [renderSeed, setRenderSeed] = useState(0);
   const [routePaths, setRoutePaths] = useState<google.maps.Polyline[]>([]);
   const [hoverBusStop, setHoverBusStop] = useState<BusStop>();
   const [hoverRoute, setHoverRoute] = useState<RouteWithData>();
+  const [markers, setMarkers] = useState<any>([]);
+  const [stopMap, setStopMap] = useState<any>({});
+  const [mapBounds, setMapBounds] = useState({
+    bounds: [0, 0, 0, 0],
+    zoom: 0,
+  });
 
   useEffect(() => {
     if (ui.mode === "routes") {
@@ -335,24 +344,105 @@ const Map: React.FC = () => {
   const infoBusStop = hoverBusStop ?? dataStore.selectedBusStop;
   const infoRoute = hoverRoute ?? dataStore.selectedRoute;
 
+  useEffect(() => {
+    if (ui.mode === "routes" && dataStore.selectedRoute) {
+      setShowNonRouteBusStops(true);
+    }
+  }, [dataStore.selectedRoute, ui.mode]);
+
+  const onChangeBusStop = (e: any) => {
+    map?.panTo({
+      lat: parseFloat(e.detail.latitude),
+      lng: parseFloat(e.detail.longitude),
+    });
+    map?.setZoom(15);
+  };
+
+  useEffect(() => {
+    document.addEventListener("click-bus-stop", onChangeBusStop);
+    return () => {
+      document.removeEventListener("click-bus-stop", onChangeBusStop);
+    };
+  }, [map]);
+
+  const onMapChange = ({ bounds, zoom }: any) => {
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+
+    setMapBounds({
+      ...mapBounds,
+      bounds: [sw.lng(), sw.lat(), ne.lng(), ne.lat()],
+      zoom,
+    });
+  };
+
+  useEffect(() => {
+    if (!dataStore.busStops?.length) {
+      return;
+    }
+    const newStopMap: any = {};
+    const points = dataStore.busStops.map((busStop, idx) => {
+      const showBusStop =
+        !showNonRouteBusStops ||
+        dataStore.busStopToRoute[busStop.id]?.[0] ===
+          dataStore.selectedRoute?.name;
+      if (!showBusStop) {
+        return undefined;
+      }
+      newStopMap[busStop.id] = busStop;
+      return {
+        type: "Feature",
+        properties: {
+          cluster: false,
+          busStopId: busStop.id,
+          name: busStop.name,
+          idx,
+        },
+        geometry: {
+          type: "Point",
+          coordinates: [busStop.longitude, busStop.latitude],
+        },
+      };
+    });
+    setStopMap(newStopMap);
+    setMarkers(points.filter((b) => b));
+  }, [dataStore.busStops, showNonRouteBusStops, dataStore.selectedRoute]);
+
+  const { clusters, supercluster } = useSupercluster({
+    points: markers,
+    bounds: mapBounds.bounds,
+    zoom: mapBounds.zoom,
+    options: { radius: 95, maxZoom: 20 },
+  });
+
   return (
     <div className="flex flex-grow flex-col max-sm:w-full">
       <div className="p-2 flex flex-col gap-2 items-end" id="ui-top-right">
         {ui.mode === "routes" && (
           <div className="flex justify-end">
-            <div className="bg-white w-fit px-2 drop-shadow-md rounded-lg py-1 flex items-center flex-col gap-2 text-gray-700">
+            <div className="bg-white w-fit px-2 drop-shadow-md rounded-lg py-1 flex items-start flex-col gap-2 text-gray-700">
               <Checkbox
                 isChecked={showBusStops}
                 onChange={(e) => setShowBusStops(e.target.checked)}
               >
                 <p className="!text-sm">Bus Stops</p>
               </Checkbox>
+              {dataStore.selectedRoute && (
+                <Checkbox
+                  isChecked={showNonRouteBusStops}
+                  onChange={(e) => setShowNonRouteBusStops(e.target.checked)}
+                >
+                  <p className="!text-sm">
+                    Hide bus stops not in {`"${dataStore.selectedRoute.name}"`}
+                  </p>
+                </Checkbox>
+              )}
             </div>
           </div>
         )}
         <div className="flex gap-2">
           {infoBusStop && (
-            <div className="bg-white min-w-fit w-[120px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+            <div className="bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <div className="flex items-center flex-col w-full">
                 <p className="font-semibold mb-0.5">{infoBusStop.name}</p>
                 <p className="text-xs w-full text-center border-b-2 pb-1">
@@ -372,11 +462,11 @@ const Map: React.FC = () => {
             </div>
           )}
           {infoRoute && (
-            <div className="bg-white min-w-fit w-[120px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+            <div className="bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <p className="font-semibold border-b-2 pb-2 w-full text-center">
                 {infoRoute.name}
               </p>
-              <div className="w-full">
+              <div className="w-full max-h-[300px] overflow-y-auto">
                 <p className="text-xs text-right">
                   {infoRoute.routeBusStops?.length > 0
                     ? "Bus Stops:"
@@ -411,9 +501,42 @@ const Map: React.FC = () => {
             document.getElementById("ui-top-right")!,
           );
         }}
+        onChange={onMapChange}
       >
         {showBusStops &&
-          dataStore.busStops.map((busStop, idx) => {
+          clusters.map((cluster) => {
+            const [longitude, latitude] = cluster.geometry.coordinates;
+            const {
+              cluster: isCluster,
+              point_count: pointCount,
+              busStopId,
+              idx,
+            } = cluster.properties;
+
+            if (isCluster) {
+              return (
+                <MarkerCluster
+                  key={`cluster-${cluster.id}`}
+                  lat={latitude}
+                  lng={longitude}
+                  count={pointCount}
+                  onClick={(e) => {
+                    const expansionZoom = Math.min(
+                      supercluster.getClusterExpansionZoom(cluster.id),
+                      20,
+                    );
+                    map?.panTo({ lat: latitude, lng: longitude });
+                    map?.setZoom(expansionZoom);
+                  }}
+                />
+              );
+            }
+
+            const busStop = stopMap[busStopId];
+            if (!busStop) {
+              return <span key={busStopId}></span>;
+            }
+
             let color;
             let busStopIdx;
             if (
@@ -437,7 +560,6 @@ const Map: React.FC = () => {
               busStop.id,
               isFirstStopInRoute,
             );
-
             return (
               <MarkerBusStop
                 idx={busStopIdx}

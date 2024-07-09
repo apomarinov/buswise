@@ -10,10 +10,16 @@ import { useDrag, useDrop } from "react-dnd";
 type Props = {
   idx: number;
   busStop: RouteBusStopWithData;
+  onClick: () => void;
   onDragEnd: (busStopId: number, fromOrder: number, toOrder: number) => void;
 };
 
-const BusStopDraggable: React.FC<Props> = ({ busStop, onDragEnd, idx }) => {
+const BusStopDraggable: React.FC<Props> = ({
+  busStop,
+  onDragEnd,
+  idx,
+  onClick,
+}) => {
   const [{ opacity }, dragRef] = useDrag(
     () => ({
       type: "card",
@@ -61,6 +67,7 @@ const BusStopDraggable: React.FC<Props> = ({ busStop, onDragEnd, idx }) => {
             return;
           }
           dataStore.setSelectedBusStopById(busStop.busStopId);
+          onClick();
         }}
       >
         {`${idx + 1}. `}

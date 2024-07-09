@@ -55,6 +55,9 @@ const SideBar: React.FC = () => {
   }>({});
 
   const changeMode = async (mode: Mode) => {
+    if (mode === ui.mode) {
+      return;
+    }
     ui.setMode(mode);
     setActiveItem(undefined);
     dataStore.setSelectedBusStopIdx();
@@ -242,7 +245,7 @@ const SideBar: React.FC = () => {
           </span>
         ))}
       </div>
-      <div className="w-full h-full flex flex-col gap-2 p-2 overflow-y-auto">
+      <div className="w-full h-full flex flex-col gap-2 p-2 overflow-y-auto max-h-[89vh]">
         {emptyMessage && (
           <div className="m-auto text-center font-semibold text-sm mx-4">
             {emptyMessage}
@@ -305,6 +308,13 @@ const SideBar: React.FC = () => {
                           <BusStopDraggable
                             idx={idx}
                             key={busStop.busStop.name}
+                            onClick={() => {
+                              document.dispatchEvent(
+                                new CustomEvent(`click-bus-stop`, {
+                                  detail: busStop.busStop,
+                                }),
+                              );
+                            }}
                             busStop={busStop}
                             onDragEnd={(busStopId, fromOrder, toOrder) => {
                               void dataStore.changeBusStopOrderInRoute(
