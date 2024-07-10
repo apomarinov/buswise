@@ -35,7 +35,7 @@ const domNodeToLatLng = (
 };
 
 const domNodesToGeoPolygon = (
-  map,
+  map: google.maps.Map,
   nodes: Element[],
   offsetX: number,
   offsetY: number,

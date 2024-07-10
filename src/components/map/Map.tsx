@@ -445,6 +445,7 @@ const Map: React.FC = () => {
 
   const { clusters, supercluster } = useSupercluster({
     points: markers,
+    // @ts-ignore
     bounds: mapBounds.bounds,
     zoom: mapBounds.zoom,
     options: {
@@ -646,6 +647,7 @@ const Map: React.FC = () => {
           value={lassoPoints}
           src="/lassobg.png"
           onChange={(value) => {
+            // @ts-ignore
             setLassoPoints(value);
           }}
           onComplete={(value) => {
