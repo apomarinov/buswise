@@ -31,6 +31,7 @@ type DataStoreContext = {
   setRouteForm: (route?: RouteForm) => void;
   addBusStopToRoute: (routeId: number, busStopId: number) => Promise<void>;
   removeBusStopFromRoute: (routeId: number, busStopId: number) => Promise<void>;
+  deleteBusStops: (busStopIds: number[]) => Promise<void>;
   routeFirstStops: { [k in string]: number };
   busStopToRoute: { [k in number]: string[] };
   deleteRoute: (id: number) => Promise<void>;
@@ -100,6 +101,7 @@ const Context = React.createContext<DataStoreContext>({
     from: number,
     to: number,
   ) => Promise.resolve(),
+  deleteBusStops: (busStopIds: number[]) => Promise.resolve(),
 });
 
 export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
@@ -240,6 +242,20 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
     setIsLoading(false);
   };
 
+  const deleteBusStops = async (busStopIds: number[]) => {
+    setIsLoading(true);
+    await api(`/bus-stop`, {
+      method: "DELETE",
+      body: JSON.stringify({ busStopIds }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    await fetchBusStops();
+    await fetchRoutes();
+    setIsLoading(false);
+  };
+
   const changeBusStopOrderInRoute = async (
     routeId: number,
     busStopId: number,
@@ -364,6 +380,7 @@ export const DataStoreContextProvider: React.FC<PropsWithChildren> = ({
         busStopToRoute,
         setSelectedBusStopById,
         changeBusStopOrderInRoute,
+        deleteBusStops,
       }}
     >
       {children}

@@ -35,6 +35,7 @@ export default handler(async (req: NextApiRequest, res: NextApiResponse) => {
     const id = z.coerce.number().parse(req.query.id);
     const routeList = await routes.getByBusStopId(id);
     for (const route of routeList) {
+      await routes.saveHistory(route.id);
       await routes.removeBusStop({
         routeId: route.id,
         busStopId: id,

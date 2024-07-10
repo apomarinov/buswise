@@ -7,6 +7,9 @@ import MarkerBusStop, {
   type MarkerBusStopProps,
 } from "app/components/map/MarkerBusStop";
 import MarkerCluster from "app/components/map/MarkerCluster";
+import ModalConfirm, {
+  type ModalConfirmProps,
+} from "app/components/modal/ModalConfirm";
 import { useDataStore } from "app/contexts/DataStore";
 import { useUiController } from "app/contexts/UIController";
 import { env } from "app/env";
@@ -92,6 +95,7 @@ const Map: React.FC = () => {
     zoom: 0,
   });
   const [lassoPoints, setLassoPoints] = useState([]);
+  const [deleteModal, setDeleteModal] = useState<ModalConfirmProps>();
 
   useEffect(() => {
     if (ui.mode === "routes") {
@@ -155,8 +159,11 @@ const Map: React.FC = () => {
       strokeColor,
       strokeOpacity: 1.0,
       strokeWeight: dataStore.selectedRouteIdx === idx ? activeStrokeSize : 4,
-      zIndex: dataStore.selectedRouteIdx === idx ? 2 : 0,
+      zIndex: dataStore.selectedRouteIdx === idx ? (isHistory ? 1 : 2) : 0,
     });
+    if (isHistory) {
+      return line;
+    }
     line.addListener("mousemove", () => {
       line.setOptions({ strokeWeight: activeStrokeSize, zIndex: 4 });
       setHoverRoute(route);
@@ -356,12 +363,6 @@ const Map: React.FC = () => {
   const infoBusStop = hoverBusStop ?? dataStore.selectedBusStop;
   const infoRoute = hoverRoute ?? dataStore.selectedRoute;
 
-  useEffect(() => {
-    if (ui.mode === "routes" && dataStore.selectedRoute) {
-      setShowNonRouteBusStops(true);
-    }
-  }, [dataStore.selectedRoute, ui.mode]);
-
   const onChangeBusStop = (e: any) => {
     map?.panTo({
       lat: parseFloat(e.detail.latitude),
@@ -413,8 +414,9 @@ const Map: React.FC = () => {
     const points = dataStore.busStops.map((busStop, idx) => {
       const showBusStop =
         !showNonRouteBusStops ||
-        dataStore.busStopToRoute[busStop.id]?.[0] ===
-          dataStore.selectedRoute?.name;
+        dataStore.busStopToRoute[busStop.id]?.includes(
+          dataStore.selectedRoute?.name!,
+        );
       if (!showBusStop) {
         return undefined;
       }
@@ -493,9 +495,92 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     const newMarkersInfo: BusStop[] = [];
+    const busStopsInRoute: BusStop[] = [];
+    const busStopsNotInRoute: BusStop[] = [];
     markersInLasso.forEach((busStopId) => {
       newMarkersInfo.push(stopMap[busStopId]);
+      if (
+        dataStore.selectedRoute &&
+        dataStore.busStopToRoute[busStopId]!.includes(
+          dataStore.selectedRoute.name,
+        )
+      ) {
+        busStopsInRoute.push(stopMap[busStopId]);
+      } else {
+        busStopsNotInRoute.push(stopMap[busStopId]);
+      }
     });
+    if (newMarkersInfo.length) {
+      const newMapConfirm: MapUiConfirmProps = {
+        isLoading: false,
+        actions: [],
+        onCancel: () => {
+          setMapConfirm(undefined);
+          setMarkersInLasso([]);
+        },
+      };
+      if (dataStore.selectedRoute) {
+        if (busStopsNotInRoute.length) {
+          newMapConfirm.actions.push({
+            text: `Add ${busStopsNotInRoute.length} bus stops to ${dataStore.selectedRoute.name}`,
+            action: () => {
+              console.log("add");
+            },
+          });
+        }
+        if (busStopsInRoute.length) {
+          newMapConfirm.actions.push({
+            text: `Remove ${busStopsInRoute.length} bus stops from ${dataStore.selectedRoute.name}`,
+            action: () => {
+              console.log("remove");
+            },
+          });
+          newMapConfirm.actions.push({
+            select: {
+              placeholder: `Move ${busStopsInRoute.length} bus stops to route`,
+              onChange: (routeId: number) => {
+                console.log(213, routeId);
+              },
+              options: dataStore.routes
+                .filter((route) => route.id !== dataStore.selectedRoute!.id)
+                .map((route) => ({
+                  name: route.name,
+                  value: route.id,
+                })),
+            },
+            action: () => {
+              console.log("move");
+            },
+          });
+        }
+      }
+
+      newMapConfirm.actions.push({
+        text: `Delete ${busStopsNotInRoute.length + busStopsInRoute.length} bus stops`,
+        danger: true,
+        action: () => {
+          setDeleteModal({
+            confirmText: "Delete",
+            description:
+              "This will also remove the bus stops in any routes they are used in.",
+            title: `Delete ${busStopsNotInRoute.length + busStopsInRoute.length} bus stops`,
+            onCancel: () => setDeleteModal(undefined),
+            onConfirm: async () => {
+              const ids = [
+                ...busStopsNotInRoute.map((b) => b.id),
+                ...busStopsInRoute.map((b) => b.id),
+              ];
+              void dataStore.deleteBusStops(ids);
+              setDeleteModal(undefined);
+              setMarkersInLasso([]);
+              setMapConfirm(undefined);
+              dataStore.setSelectedBusStopIdx();
+            },
+          });
+        },
+      });
+      setMapConfirm(newMapConfirm);
+    }
     setMarkersInfo(newMarkersInfo);
   }, [markersInLasso]);
 
@@ -506,6 +591,9 @@ const Map: React.FC = () => {
         lassoEnabled && "pointer-events-none",
       )}
     >
+      {deleteModal && (
+        <ModalConfirm {...deleteModal} isLoading={dataStore.isLoading} />
+      )}
       <div
         className={cn(
           "absolute top-0 left-0 z-[1] w-full h-full",
@@ -540,50 +628,40 @@ const Map: React.FC = () => {
             for lasso select
           </div>
         )}
-        {ui.mode === "routes" && (
-          <div className="flex justify-end pointer-events-auto">
-            <div className="bg-white w-fit px-2 drop-shadow-md rounded-lg py-1 flex items-start flex-col gap-2 text-gray-700">
-              <Checkbox
-                isChecked={showBusStops}
-                onChange={(e) => setShowBusStops(e.target.checked)}
-              >
-                <p className="!text-sm">Bus Stops</p>
-              </Checkbox>
-              {dataStore.selectedRoute && (
+
+        <div className="flex justify-end pointer-events-auto">
+          <div className="bg-white w-fit px-2 drop-shadow-md rounded-lg py-1 flex items-start flex-col gap-2 text-gray-700">
+            {ui.mode === "routes" && (
+              <>
                 <Checkbox
-                  isChecked={showNonRouteBusStops}
-                  onChange={(e) => setShowNonRouteBusStops(e.target.checked)}
+                  isChecked={showBusStops}
+                  onChange={(e) => setShowBusStops(e.target.checked)}
                 >
-                  <p className="!text-sm">
-                    Hide bus stops not in {`"${dataStore.selectedRoute.name}"`}
-                  </p>
+                  <p className="!text-sm">Bus Stops</p>
                 </Checkbox>
-              )}
-              <Checkbox
-                isChecked={clustering}
-                onChange={(e) => setClustering(e.target.checked)}
-              >
-                <p className="!text-sm">Marker Grouping</p>
-              </Checkbox>
-            </div>
+                {dataStore.selectedRoute && (
+                  <Checkbox
+                    isChecked={showNonRouteBusStops}
+                    onChange={(e) => setShowNonRouteBusStops(e.target.checked)}
+                  >
+                    <p className="!text-sm">
+                      Hide bus stops not in{" "}
+                      {`"${dataStore.selectedRoute.name}"`}
+                    </p>
+                  </Checkbox>
+                )}
+              </>
+            )}
+            <Checkbox
+              isChecked={clustering}
+              onChange={(e) => setClustering(e.target.checked)}
+            >
+              <p className="!text-sm">Marker Grouping</p>
+            </Checkbox>
           </div>
-        )}
+        </div>
+
         <div className="flex gap-2">
-          {markersInfo.length > 0 && (
-            <div className="pointer-events-auto max-h-[300px] bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
-              <div className="flex items-center flex-col w-full overflow-y-hidden">
-                <p className="font-semibold">{markersInfo.length} Bus Stops</p>
-                <p className="text-xs w-full text-center border-b-2 pb-1 mb-0.5"></p>
-                <div className="overflow-y-auto w-full max-h-full flex-col pr-1">
-                  {markersInfo.map((busStop) => (
-                    <div key={busStop.id} className="text-right">
-                      {busStop.name}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
           {infoBusStop && (
             <div className="bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <div className="flex items-center flex-col w-full">
@@ -601,6 +679,21 @@ const Map: React.FC = () => {
                     {route}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+          {markersInfo.length > 0 && (
+            <div className="pointer-events-auto max-h-[300px] bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+              <div className="flex items-center flex-col w-full overflow-y-hidden">
+                <p className="font-semibold">{markersInfo.length} Bus Stops</p>
+                <p className="text-xs w-full text-center border-b-2 pb-1 mb-0.5"></p>
+                <div className="overflow-y-auto w-full max-h-full flex-col pr-1">
+                  {markersInfo.map((busStop) => (
+                    <div key={busStop.id} className="text-right">
+                      {busStop.name}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

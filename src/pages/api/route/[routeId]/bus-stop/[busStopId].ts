@@ -17,6 +17,7 @@ export default handler(async (req: NextApiRequest, res: NextApiResponse) => {
       payload,
       routes.schemaRouteBusStopQuery,
     );
+    await routes.saveHistory(data.routeId);
     await routes.removeBusStop(data);
     response.success(res);
     return;

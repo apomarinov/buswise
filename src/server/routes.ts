@@ -114,7 +114,9 @@ const recalculateBusStopData = async (
 ): Promise<void> => {
   const route = await tx.route.findUniqueOrThrow({
     where: { id: routeId },
-    include: { routeBusStops: { include: { busStop: true } } },
+    include: {
+      routeBusStops: { include: { busStop: true }, orderBy: { order: "asc" } },
+    },
   });
   if (!route.routeBusStops.length) {
     return;
@@ -160,7 +162,6 @@ const recalculateBusStopData = async (
 
 const removeBusStop = async (data: RouteBusStopQuery): Promise<void> => {
   await db.$transaction(async (tx) => {
-    await saveHistory(data.routeId);
     const routeBusStop = await tx.routeBusStop.findFirstOrThrow({
       where: { routeId: data.routeId, busStopId: data.busStopId },
     });
