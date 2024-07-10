@@ -223,7 +223,10 @@ const SideBar: React.FC = () => {
   }, [dataStore.selectedRouteIdx, dataStore.selectedRoute]);
 
   return (
-    <div className="flex relative drop-shadow-md flex-col bg-white max-w-[25%] min-w-[300px] max-sm:min-w-full max-sm:absolute top-0 left-0 max-sm:h-full z-[2]">
+    <div
+      id="sidebar"
+      className="flex relative drop-shadow-md flex-col bg-white max-w-[25%] min-w-[300px] max-sm:min-w-full max-sm:absolute top-0 left-0 max-sm:h-full z-[2]"
+    >
       {dataStore.isLoading && (
         <div className="bg-white z-10 cursor-wait opacity-70 absolute top-0 left-0 w-full h-full"></div>
       )}

@@ -18,7 +18,7 @@ const MapUiConfirm: React.FC<MapUiConfirmProps> = ({
   actions,
 }) => {
   return (
-    <div className="w-full bg-white drop-shadow-md rounded-lg p-2 flex flex-col gap-2">
+    <div className="pointer-events-auto w-full bg-white drop-shadow-md rounded-lg p-2 flex flex-col gap-2">
       {text && <p className="text-[13px]">{text}</p>}
       {actions.map((cfg) => (
         <Button

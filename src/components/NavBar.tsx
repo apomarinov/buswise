@@ -11,7 +11,10 @@ type Props = {
 const NavBar: React.FC<Props> = ({ onClickLogo }) => {
   const ui = useUiController();
   return (
-    <div className="w-full bg-white drop-shadow-sm h-12 py-1 px-4 flex items-center justify-between z-10">
+    <div
+      id="navbar"
+      className="w-full bg-white drop-shadow-sm h-12 py-1 px-4 flex items-center justify-between z-10"
+    >
       <div className="slide-in-blurred-left cursor-pointer">
         <Logo onClick={onClickLogo} />
       </div>

@@ -119,3 +119,19 @@
 }
 
 .gm-style iframe + div { border:none!important; }
+
+.ReactFreeSelect__Component {
+    height: 100%;
+}
+
+.ReactFreeSelect__Component polygon {
+    display: none;
+}
+
+.ReactFreeSelect__Component rect[vector-effect] {
+    @apply stroke-gray-500
+}
+
+.ReactFreeSelect__Component polyline {
+    @apply stroke-gray-500
+}

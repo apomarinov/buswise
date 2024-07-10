@@ -1,4 +1,5 @@
-import { Checkbox } from "@chakra-ui/react";
+import { Checkbox, Kbd } from "@chakra-ui/react";
+import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import MapUiConfirm, {
   type MapUiConfirmProps,
 } from "app/components/map/MapUiConfirm";
@@ -9,17 +10,22 @@ import MarkerCluster from "app/components/map/MarkerCluster";
 import { useDataStore } from "app/contexts/DataStore";
 import { useUiController } from "app/contexts/UIController";
 import { env } from "app/env";
+import mapHelpers from "app/helpers/map";
 import { colorFromString } from "app/helpers/string";
+import useDebounce from "app/hooks/useDebounce";
 import { type BusStop } from "app/server/bus-stops";
 import {
   type RouteBusStopWithData,
   type RouteWithData,
 } from "app/server/routes";
+import cn from "classnames";
+import { type GeoJSON } from "geojson";
 import GoogleMap, {
   type LatLngLiteral,
   type MapOptions,
 } from "google-maps-react-markers";
 import React, { useEffect, useState } from "react";
+import ReactLassoSelect, { getCanvas } from "react-lasso-select";
 import useSupercluster from "use-supercluster";
 
 const mapOptions: MapOptions = {
@@ -76,15 +82,20 @@ const Map: React.FC = () => {
   const [hoverRoute, setHoverRoute] = useState<RouteWithData>();
   const [markers, setMarkers] = useState<any>([]);
   const [stopMap, setStopMap] = useState<any>({});
+  const [lassoEnabled, setLassoEnabled] = useState(false);
+  const [lassoClosed, setLassoClosed] = useState(false);
+  const [markersInLasso, setMarkersInLasso] = useState<number[]>([]);
   const [mapBounds, setMapBounds] = useState({
     bounds: [0, 0, 0, 0],
     zoom: 0,
   });
+  const [lassoPoints, setLassoPoints] = useState([]);
 
   useEffect(() => {
     if (ui.mode === "routes") {
       setShowBusStops(true);
     }
+    setMarkersInLasso([]);
   }, [ui.mode]);
 
   useEffect(() => {
@@ -358,10 +369,27 @@ const Map: React.FC = () => {
     map?.setZoom(15);
   };
 
+  const enableLasso = (e: KeyboardEvent) => {
+    setLassoEnabled(e.altKey);
+  };
+  const disableLasso = (e: KeyboardEvent) => {
+    setLassoEnabled((old) => {
+      if (old) {
+        setLassoPoints([]);
+        setLassoClosed(false);
+      }
+      return false;
+    });
+  };
+
   useEffect(() => {
     document.addEventListener("click-bus-stop", onChangeBusStop);
+    document.addEventListener("keydown", enableLasso);
+    document.addEventListener("keyup", disableLasso);
     return () => {
       document.removeEventListener("click-bus-stop", onChangeBusStop);
+      document.removeEventListener("keydown", enableLasso);
+      document.removeEventListener("keyup", disableLasso);
     };
   }, [map]);
 
@@ -415,11 +443,93 @@ const Map: React.FC = () => {
     options: { radius: 95, maxZoom: 20 },
   });
 
+  const [debouncedLasso] = useDebounce(lassoPoints, 20);
+
+  useEffect(() => {
+    if (!debouncedLasso.length || !map || !lassoClosed) {
+      return;
+    }
+    const sideBarWidth = document
+      .getElementById("sidebar")!
+      .getBoundingClientRect().width;
+    const navBarHeight = document
+      .getElementById("navbar")!
+      .getBoundingClientRect().height;
+
+    const lassoRects = Array.from(
+      document.querySelectorAll(
+        '.ReactFreeSelect__Component svg rect:not([visibility="hidden"])',
+      ),
+    );
+    const lassoPolygon = mapHelpers.domNodesToGeoPolygon(
+      map,
+      lassoRects,
+      sideBarWidth,
+      navBarHeight,
+    );
+    const newMarkersInLasso: number[] = [];
+    clusters.forEach((cluster) => {
+      if (cluster.properties.cluster) {
+        return;
+      }
+      const point: GeoJSON.Point = {
+        type: "Point",
+        coordinates: cluster.geometry.coordinates,
+      };
+      if (booleanPointInPolygon(point, lassoPolygon)) {
+        newMarkersInLasso.push(cluster.properties.busStopId);
+      }
+    });
+    setMarkersInLasso(newMarkersInLasso);
+  }, [debouncedLasso, lassoClosed]);
+
+  useEffect(() => {
+    setMarkersInLasso([]);
+  }, [dataStore.selectedBusStopIdx]);
+
   return (
-    <div className="flex flex-grow flex-col max-sm:w-full">
-      <div className="p-2 flex flex-col gap-2 items-end" id="ui-top-right">
+    <div
+      className={cn(
+        "flex flex-grow flex-col max-sm:w-full relative",
+        lassoEnabled && "pointer-events-none",
+      )}
+    >
+      <div
+        className={cn(
+          "absolute top-0 left-0 z-[1] w-full h-full",
+          lassoEnabled
+            ? "pointer-events-auto"
+            : "pointer-events-none opacity-0",
+        )}
+      >
+        <ReactLassoSelect
+          value={lassoPoints}
+          src="/lassobg.png"
+          onChange={(value) => {
+            setLassoPoints(value);
+          }}
+          onComplete={(value) => {
+            if (!value.length) return;
+            getCanvas("/lassobg.png", value, (err, canvas) => {
+              if (!err) {
+                setLassoClosed(true);
+              }
+            });
+          }}
+        />
+      </div>
+      <div
+        className="p-2 flex flex-col gap-2 items-end pointer-events-none"
+        id="ui-top-right"
+      >
+        {!lassoEnabled && (
+          <div className="bg-white w-fit px-2 drop-shadow-md rounded-lg py-1 flex items-center gap-2 text-gray-700">
+            Hold <Kbd className="!text-[14px]">alt</Kbd> and click on the map
+            for lasso select
+          </div>
+        )}
         {ui.mode === "routes" && (
-          <div className="flex justify-end">
+          <div className="flex justify-end pointer-events-auto">
             <div className="bg-white w-fit px-2 drop-shadow-md rounded-lg py-1 flex items-start flex-col gap-2 text-gray-700">
               <Checkbox
                 isChecked={showBusStops}
@@ -462,7 +572,7 @@ const Map: React.FC = () => {
             </div>
           )}
           {infoRoute && (
-            <div className="bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+            <div className="pointer-events-auto bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <p className="font-semibold border-b-2 pb-2 w-full text-center">
                 {infoRoute.name}
               </p>
@@ -571,7 +681,10 @@ const Map: React.FC = () => {
                 key={idx + renderSeed}
                 color={color}
                 isFirstStopInRoute={isFirstStopInRoute}
-                isSelected={dataStore.selectedBusStopIdx === idx}
+                isSelected={
+                  dataStore.selectedBusStopIdx === idx ||
+                  markersInLasso.includes(busStopId)
+                }
                 lat={busStop.latitude}
                 lng={busStop.longitude}
                 onClick={(e) => onBusStopClick(e, idx, busStop)} // you need to manage this prop on your Marker component!
