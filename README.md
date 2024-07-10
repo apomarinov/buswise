@@ -40,12 +40,30 @@
         - Clicking on a bus stop not part of the route will show a control panel with the option to add it to the route or create a new route
         - Changing a bus stop's location will recalculate the route paths in each route that uses the bus stop
 
+### Change Log
+
+ - v0.0.2
+   - added tool to generate bus stops and routes in a geojson polygon
+   - added marker clustering
+   - added lasso selection tool and bulk actions
+   - Features
+     - Map Toggles
+       - marker clustering toggle
+       - toggle bus stops that are not in any routes
+     - Lasso Selection
+       - hold ALT key and click on the map to create a shape, click first point to close the shape and select bus stops
+       - info panel with lasso selected bus stops
+     - Selected Bus Stops
+       - remove from selected route
+       - delete bus stops
+       - move to another route
+     - 
+ - v0.0.1 - Initial Release  
 
 ### Missing Features
 
 - "Double click to add a new stop." - The map events for double click also trigger click and single click does the same job
 - "Right-click context menu" - In routes mode, clicking on the map to add a bus stop also starts a route if no route is selected or adds a new stop to the current selected route
-- "Multi-select" - to be implemented
 - "Future Planning" - assuming this is covered by displaying multiple routes in the map
 
 
