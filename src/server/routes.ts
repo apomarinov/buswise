@@ -134,7 +134,6 @@ const recalculateBusStopData = async (
         geoPoints: [],
       },
     });
-    return;
   }
 
   // intermediate bus stop deleted
@@ -155,7 +154,6 @@ const recalculateBusStopData = async (
           geoPoints: routeInfo.geoPoints,
         },
       });
-      return;
     }
   }
 
