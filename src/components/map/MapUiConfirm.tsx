@@ -7,7 +7,7 @@ export type MapUiConfirmProps = {
   actions: {
     text?: string;
     danger?: boolean;
-    action: () => void;
+    action?: () => void;
     select?: {
       placeholder: string;
       options: {
@@ -46,6 +46,7 @@ const MapUiConfirm: React.FC<MapUiConfirmProps> = ({
           )}
           {cfg.select && (
             <Select
+              isDisabled={isLoading}
               className="w-full"
               placeholder={cfg.select.placeholder}
               onChange={(e) => cfg.select?.onChange(parseInt(e.target.value))}

@@ -248,7 +248,7 @@ const SideBar: React.FC = () => {
           </span>
         ))}
       </div>
-      <div className="w-full h-full flex flex-col gap-2 p-2 overflow-y-auto max-h-[89vh]">
+      <div className="w-full h-full flex flex-col gap-2 p-2 overflow-y-auto max-h-[calc(89vh+2px)]">
         {emptyMessage && (
           <div className="m-auto text-center font-semibold text-sm mx-4">
             {emptyMessage}

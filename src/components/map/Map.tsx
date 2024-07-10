@@ -98,8 +98,10 @@ const Map: React.FC = () => {
   const [deleteModal, setDeleteModal] = useState<ModalConfirmProps>();
 
   useEffect(() => {
-    if (ui.mode === "routes") {
+    setShowBusStops(true);
+    if (ui.mode !== "routes") {
       setShowBusStops(true);
+      setShowNonRouteBusStops(false);
     }
     setMarkersInLasso([]);
   }, [ui.mode]);
@@ -415,7 +417,7 @@ const Map: React.FC = () => {
       const showBusStop =
         !showNonRouteBusStops ||
         dataStore.busStopToRoute[busStop.id]?.includes(
-          dataStore.selectedRoute?.name!,
+          dataStore.selectedRoute?.name,
         );
       if (!showBusStop) {
         return undefined;
@@ -448,6 +450,10 @@ const Map: React.FC = () => {
       maxZoom: 20,
     },
   });
+
+  useEffect(() => {
+    setShowNonRouteBusStops(dataStore.selectedRouteIdx !== undefined);
+  }, [dataStore.selectedRouteIdx]);
 
   const [debouncedLasso] = useDebounce(lassoPoints, 20);
 
@@ -524,13 +530,16 @@ const Map: React.FC = () => {
           newMapConfirm.actions.push({
             text: `Add ${busStopsNotInRoute.length} bus stops to ${dataStore.selectedRoute.name}`,
             action: () => {
-              void dataStore.addBusStopsToRoute(
-                dataStore.selectedRoute!.id,
-                busStopsNotInRoute.map((b) => b.id),
-              );
-              setMarkersInLasso([]);
-              setMapConfirm(undefined);
-              dataStore.setSelectedBusStopIdx();
+              void dataStore
+                .addBusStopsToRoute(
+                  dataStore.selectedRoute!.id,
+                  busStopsNotInRoute.map((b) => b.id),
+                )
+                .then((r) => {
+                  setMarkersInLasso([]);
+                  setMapConfirm(undefined);
+                  dataStore.setSelectedBusStopIdx();
+                });
             },
           });
         }
@@ -538,13 +547,16 @@ const Map: React.FC = () => {
           newMapConfirm.actions.push({
             text: `Remove ${busStopsInRoute.length} bus stops from ${dataStore.selectedRoute.name}`,
             action: () => {
-              void dataStore.removeBusStopsFromRoute(
-                dataStore.selectedRoute!.id,
-                busStopsInRoute.map((b) => b.id),
-              );
-              setMarkersInLasso([]);
-              setMapConfirm(undefined);
-              dataStore.setSelectedBusStopIdx();
+              void dataStore
+                .removeBusStopsFromRoute(
+                  dataStore.selectedRoute!.id,
+                  busStopsInRoute.map((b) => b.id),
+                )
+                .then((r) => {
+                  setMarkersInLasso([]);
+                  setMapConfirm(undefined);
+                  dataStore.setSelectedBusStopIdx();
+                });
             },
           });
           newMapConfirm.actions.push({
@@ -557,13 +569,16 @@ const Map: React.FC = () => {
                     busStopsInRoute.map((b) => b.id),
                   )
                   .then((r) => {
-                    void dataStore.addBusStopsToRoute(
-                      routeId,
-                      busStopsInRoute.map((b) => b.id),
-                    );
-                    setMarkersInLasso([]);
-                    setMapConfirm(undefined);
-                    dataStore.setSelectedBusStopIdx();
+                    void dataStore
+                      .addBusStopsToRoute(
+                        routeId,
+                        busStopsInRoute.map((b) => b.id),
+                      )
+                      .then((r) => {
+                        setMarkersInLasso([]);
+                        setMapConfirm(undefined);
+                        dataStore.setSelectedBusStopIdx();
+                      });
                   });
               },
               options: dataStore.routes
@@ -572,9 +587,6 @@ const Map: React.FC = () => {
                   name: route.name,
                   value: route.id,
                 })),
-            },
-            action: () => {
-              console.log("move");
             },
           });
         }
@@ -595,11 +607,12 @@ const Map: React.FC = () => {
                 ...busStopsNotInRoute.map((b) => b.id),
                 ...busStopsInRoute.map((b) => b.id),
               ];
-              void dataStore.deleteBusStops(ids);
-              setDeleteModal(undefined);
-              setMarkersInLasso([]);
-              setMapConfirm(undefined);
-              dataStore.setSelectedBusStopIdx();
+              void dataStore.deleteBusStops(ids).then((r) => {
+                setDeleteModal(undefined);
+                setMarkersInLasso([]);
+                setMapConfirm(undefined);
+                dataStore.setSelectedBusStopIdx();
+              });
             },
           });
         },
@@ -613,7 +626,7 @@ const Map: React.FC = () => {
     <div
       className={cn(
         "flex flex-grow flex-col max-sm:w-full relative",
-        lassoEnabled && "pointer-events-none",
+        (lassoEnabled || dataStore.isLoading) && "pointer-events-none",
       )}
     >
       {deleteModal && (
@@ -644,7 +657,7 @@ const Map: React.FC = () => {
         />
       </div>
       <div
-        className="p-2 flex flex-col gap-2 items-end pointer-events-none"
+        className="p-2 flex flex-col gap-2 items-end pointer-events-none absolute hidden"
         id="ui-top-right"
       >
         {!lassoEnabled && (
@@ -688,7 +701,7 @@ const Map: React.FC = () => {
 
         <div className="flex gap-2">
           {infoBusStop && (
-            <div className="bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+            <div className="bg-white min-w-fit w-[150px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <div className="flex items-center flex-col w-full">
                 <p className="font-semibold mb-0.5">{infoBusStop.name}</p>
                 <p className="text-xs w-full text-center border-b-2 pb-1">
@@ -708,7 +721,7 @@ const Map: React.FC = () => {
             </div>
           )}
           {markersInfo.length > 0 && (
-            <div className="pointer-events-auto max-h-[300px] bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+            <div className="pointer-events-auto max-h-[300px] bg-white min-w-fit w-[150px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <div className="flex items-center flex-col w-full overflow-y-hidden">
                 <p className="font-semibold">{markersInfo.length} Bus Stops</p>
                 <p className="text-xs w-full text-center border-b-2 pb-1 mb-0.5"></p>
@@ -723,16 +736,16 @@ const Map: React.FC = () => {
             </div>
           )}
           {infoRoute && (
-            <div className="pointer-events-auto max-h-[300px] bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
-              <p className="font-semibold border-b-2 pb-2 w-full text-center">
+            <div className="pointer-events-auto max-h-[300px] bg-white min-w-fit w-[150px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+              <p className="font-semibold w-full text-center">
                 {infoRoute.name}
               </p>
+              <p className="text-xs text-center border-b-2 pb-1 w-full">
+                {infoRoute.routeBusStops?.length > 0
+                  ? `${infoRoute.routeBusStops?.length} Bus Stops`
+                  : "No Bus Stops"}
+              </p>
               <div className="w-full h-full overflow-y-auto max-h-full pr-1">
-                <p className="text-xs text-right">
-                  {infoRoute.routeBusStops?.length > 0
-                    ? "Bus Stops:"
-                    : "No Bus Stops"}
-                </p>
                 {infoRoute.routeBusStops.map((busStop, idx) => (
                   <div
                     key={busStop.busStop.name}
@@ -761,6 +774,9 @@ const Map: React.FC = () => {
           props.map.controls[google.maps.ControlPosition.TOP_RIGHT]?.push(
             document.getElementById("ui-top-right")!,
           );
+          setTimeout(() => {
+            document.getElementById("ui-top-right")!.classList.remove("hidden");
+          }, 500);
         }}
         onChange={onMapChange}
       >
