@@ -510,7 +510,7 @@ const Map: React.FC = () => {
       newMarkersInfo.push(stopMap[busStopId]);
       if (
         dataStore.selectedRoute &&
-        dataStore.busStopToRoute[busStopId]!.includes(
+        dataStore.busStopToRoute[busStopId]?.includes(
           dataStore.selectedRoute.name,
         )
       ) {

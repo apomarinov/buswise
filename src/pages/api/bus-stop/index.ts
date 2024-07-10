@@ -33,10 +33,8 @@ export default handler(async (req: NextApiRequest, res: NextApiResponse) => {
 
     const removedFromRoute: number[] = [];
     for (const id of data.busStopIds) {
-      await db.routeBusStop.deleteMany({ where: { busStopId: id } });
-      await busStops.deleteById(id);
-
       const routeList = await routes.getByBusStopId(id);
+
       for (const route of routeList) {
         if (removedFromRoute.includes(route.id)) {
           continue;
@@ -44,6 +42,8 @@ export default handler(async (req: NextApiRequest, res: NextApiResponse) => {
         await routes.saveHistory(route.id);
         removedFromRoute.push(route.id);
       }
+      await db.routeBusStop.deleteMany({ where: { busStopId: id } });
+      await busStops.deleteById(id);
     }
 
     for (const routeId of removedFromRoute) {
