@@ -13,7 +13,7 @@ export type MarkerBusStopProps = {
   isFirstStopInRoute: boolean;
   isSelected: boolean;
   color?: string;
-  onClick?: (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => void;
+  onClick?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   onDrag?: (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>,
     props: { latLng: LatLngLiteral },
@@ -64,16 +64,20 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
     <div
       onMouseEnter={onHover}
       onMouseLeave={onStopHover}
+      onClickCapture={(e) => {
+        e.preventDefault();
+        onClick?.(e);
+      }}
       className={cn(
-        "translate-y-[-40%] cursor-pointer rounded-full hover:bg-white p-1 relative",
+        "translate-y-[-40%] cursor-pointer rounded-full hover:bg-white z-10 hover:z-50 p-1 relative",
         isSelected && "bg-white bg-opacity-80",
         isFirstStopInRoute && "translate-x-[20%] translate-y-[-24%] !p-2",
       )}
     >
       {isFirstStopInRoute ? (
-        <Start onClick={onClick} color={color ?? "#525252FF"} />
+        <Start color={color ?? "#525252FF"} />
       ) : (
-        <BusStopIcon onClick={onClick} size={2.5} color={color} />
+        <BusStopIcon size={2.5} color={color} />
       )}
       {travelTime !== undefined && travelTime > 0 && (
         <div className="absolute -bottom-11 flex flex-col gap-0 bg-white p-0.5 rounded-md drop-shadow-sm justify-start px-1">

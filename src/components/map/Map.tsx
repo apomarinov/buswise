@@ -84,7 +84,9 @@ const Map: React.FC = () => {
   const [stopMap, setStopMap] = useState<any>({});
   const [lassoEnabled, setLassoEnabled] = useState(false);
   const [lassoClosed, setLassoClosed] = useState(false);
+  const [clustering, setClustering] = useState(true);
   const [markersInLasso, setMarkersInLasso] = useState<number[]>([]);
+  const [markersInfo, setMarkersInfo] = useState<BusStop[]>([]);
   const [mapBounds, setMapBounds] = useState({
     bounds: [0, 0, 0, 0],
     zoom: 0,
@@ -227,9 +229,8 @@ const Map: React.FC = () => {
   ]);
 
   const onBusStopClick = (
-    e: React.MouseEvent<SVGSVGElement, MouseEvent>,
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
     idx: number,
-    busStop: BusStop,
   ) => {
     e.stopPropagation();
     setIsDragging((old) => {
@@ -440,7 +441,10 @@ const Map: React.FC = () => {
     points: markers,
     bounds: mapBounds.bounds,
     zoom: mapBounds.zoom,
-    options: { radius: 95, maxZoom: 20 },
+    options: {
+      radius: clustering ? 95 : 0,
+      maxZoom: 20,
+    },
   });
 
   const [debouncedLasso] = useDebounce(lassoPoints, 20);
@@ -486,6 +490,14 @@ const Map: React.FC = () => {
   useEffect(() => {
     setMarkersInLasso([]);
   }, [dataStore.selectedBusStopIdx]);
+
+  useEffect(() => {
+    const newMarkersInfo: BusStop[] = [];
+    markersInLasso.forEach((busStopId) => {
+      newMarkersInfo.push(stopMap[busStopId]);
+    });
+    setMarkersInfo(newMarkersInfo);
+  }, [markersInLasso]);
 
   return (
     <div
@@ -547,10 +559,31 @@ const Map: React.FC = () => {
                   </p>
                 </Checkbox>
               )}
+              <Checkbox
+                isChecked={clustering}
+                onChange={(e) => setClustering(e.target.checked)}
+              >
+                <p className="!text-sm">Marker Grouping</p>
+              </Checkbox>
             </div>
           </div>
         )}
         <div className="flex gap-2">
+          {markersInfo.length > 0 && (
+            <div className="pointer-events-auto max-h-[300px] bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+              <div className="flex items-center flex-col w-full overflow-y-hidden">
+                <p className="font-semibold">{markersInfo.length} Bus Stops</p>
+                <p className="text-xs w-full text-center border-b-2 pb-1 mb-0.5"></p>
+                <div className="overflow-y-auto w-full max-h-full flex-col pr-1">
+                  {markersInfo.map((busStop) => (
+                    <div key={busStop.id} className="text-right">
+                      {busStop.name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
           {infoBusStop && (
             <div className="bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <div className="flex items-center flex-col w-full">
@@ -572,11 +605,11 @@ const Map: React.FC = () => {
             </div>
           )}
           {infoRoute && (
-            <div className="pointer-events-auto bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
+            <div className="pointer-events-auto max-h-[300px] bg-white min-w-fit w-[140px] flex-grow drop-shadow-md rounded-lg p-2 flex items-center flex-col gap-2 text-[15px] text-gray-700">
               <p className="font-semibold border-b-2 pb-2 w-full text-center">
                 {infoRoute.name}
               </p>
-              <div className="w-full max-h-[300px] overflow-y-auto">
+              <div className="w-full h-full overflow-y-auto max-h-full pr-1">
                 <p className="text-xs text-right">
                   {infoRoute.routeBusStops?.length > 0
                     ? "Bus Stops:"
@@ -687,7 +720,7 @@ const Map: React.FC = () => {
                 }
                 lat={busStop.latitude}
                 lng={busStop.longitude}
-                onClick={(e) => onBusStopClick(e, idx, busStop)} // you need to manage this prop on your Marker component!
+                onClick={(e) => onBusStopClick(e, idx)} // you need to manage this prop on your Marker component!
                 draggable
                 onDrag={onBusStopDrag}
                 onDragEnd={onBusStopDragEnd(busStop)}
