@@ -524,7 +524,13 @@ const Map: React.FC = () => {
           newMapConfirm.actions.push({
             text: `Add ${busStopsNotInRoute.length} bus stops to ${dataStore.selectedRoute.name}`,
             action: () => {
-              console.log("add");
+              void dataStore.addBusStopsToRoute(
+                dataStore.selectedRoute!.id,
+                busStopsNotInRoute.map((b) => b.id),
+              );
+              setMarkersInLasso([]);
+              setMapConfirm(undefined);
+              dataStore.setSelectedBusStopIdx();
             },
           });
         }
@@ -532,14 +538,33 @@ const Map: React.FC = () => {
           newMapConfirm.actions.push({
             text: `Remove ${busStopsInRoute.length} bus stops from ${dataStore.selectedRoute.name}`,
             action: () => {
-              console.log("remove");
+              void dataStore.removeBusStopsFromRoute(
+                dataStore.selectedRoute!.id,
+                busStopsInRoute.map((b) => b.id),
+              );
+              setMarkersInLasso([]);
+              setMapConfirm(undefined);
+              dataStore.setSelectedBusStopIdx();
             },
           });
           newMapConfirm.actions.push({
             select: {
               placeholder: `Move ${busStopsInRoute.length} bus stops to route`,
               onChange: (routeId: number) => {
-                console.log(213, routeId);
+                void dataStore
+                  .removeBusStopsFromRoute(
+                    dataStore.selectedRoute!.id,
+                    busStopsInRoute.map((b) => b.id),
+                  )
+                  .then((r) => {
+                    void dataStore.addBusStopsToRoute(
+                      routeId,
+                      busStopsInRoute.map((b) => b.id),
+                    );
+                    setMarkersInLasso([]);
+                    setMapConfirm(undefined);
+                    dataStore.setSelectedBusStopIdx();
+                  });
               },
               options: dataStore.routes
                 .filter((route) => route.id !== dataStore.selectedRoute!.id)

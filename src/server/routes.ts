@@ -55,7 +55,7 @@ const getList = async (): Promise<RouteWithData[]> => {
   return routes as unknown as RouteWithData[];
 };
 
-const getById = async (id: number): Promise<Route | null> => {
+const getById = async (id: number): Promise<Route> => {
   return db.route.findUniqueOrThrow({ where: { id } });
 };
 
