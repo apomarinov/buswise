@@ -103,6 +103,7 @@ const Map: React.FC = () => {
       setShowBusStops(true);
       setShowNonRouteBusStops(false);
     }
+    setClustering(true);
     setMarkersInLasso([]);
   }, [ui.mode]);
 
@@ -416,9 +417,10 @@ const Map: React.FC = () => {
     const points = dataStore.busStops.map((busStop, idx) => {
       const showBusStop =
         !showNonRouteBusStops ||
-        dataStore.busStopToRoute[busStop.id]?.includes(
-          dataStore.selectedRoute?.name,
-        );
+        (dataStore.selectedRoute &&
+          dataStore.busStopToRoute[busStop.id]?.includes(
+            dataStore.selectedRoute?.name,
+          ));
       if (!showBusStop) {
         return undefined;
       }

@@ -1,4 +1,5 @@
 import busStops, { type BusStop } from "app/server/bus-stops";
+import { db } from "app/server/db";
 import { handler } from "app/server/handler";
 import response from "app/server/response";
 import routes from "app/server/routes";
@@ -30,17 +31,25 @@ export default handler(async (req: NextApiRequest, res: NextApiResponse) => {
       z.object({ busStopIds: z.number().array() }),
     );
 
+    const removedFromRoute: number[] = [];
     for (const id of data.busStopIds) {
+      await db.routeBusStop.deleteMany({ where: { busStopId: id } });
+      await busStops.deleteById(id);
+
       const routeList = await routes.getByBusStopId(id);
       for (const route of routeList) {
+        if (removedFromRoute.includes(route.id)) {
+          continue;
+        }
         await routes.saveHistory(route.id);
-        await routes.removeBusStop({
-          routeId: route.id,
-          busStopId: id,
-        });
+        removedFromRoute.push(route.id);
       }
-      await busStops.deleteById(id);
     }
+
+    for (const routeId of removedFromRoute) {
+      await routes.recalculateBusStopData(routeId, db);
+    }
+
     response.success(res, {});
     return;
   }

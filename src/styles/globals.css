@@ -135,3 +135,7 @@
 .ReactFreeSelect__Component polyline {
     @apply stroke-gray-500
 }
+
+.google-map-markers-overlay {
+    @apply pointer-events-none
+}

@@ -112,7 +112,7 @@ const recalculateBusStopData = async (
   routeId: number,
   tx: PrismaTransactionalClient,
 ): Promise<void> => {
-  const route = await tx.route.findUniqueOrThrow({
+  let route = await tx.route.findUniqueOrThrow({
     where: { id: routeId },
     include: {
       routeBusStops: { include: { busStop: true }, orderBy: { order: "asc" } },
@@ -157,6 +157,20 @@ const recalculateBusStopData = async (
       });
       return;
     }
+  }
+
+  route = await tx.route.findUniqueOrThrow({
+    where: { id: routeId },
+    include: {
+      routeBusStops: { include: { busStop: true }, orderBy: { order: "asc" } },
+    },
+  });
+  for (let i = 0; i < route.routeBusStops.length; i++) {
+    const routeBusStop = route.routeBusStops[i]!;
+    await tx.routeBusStop.update({
+      where: { id: routeBusStop.id },
+      data: { order: i + 1 },
+    });
   }
 };
 
@@ -375,6 +389,7 @@ const exports = {
   reorderBusStop,
   getByBusStopId,
   recalculateMovedBusStopRoute,
+  recalculateBusStopData,
   saveHistory,
 };
 

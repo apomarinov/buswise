@@ -69,7 +69,7 @@ const MarkerBusStop: React.FC<MarkerBusStopProps> = ({
         onClick?.(e);
       }}
       className={cn(
-        "translate-y-[-40%] cursor-pointer rounded-full hover:bg-white z-10 hover:z-50 p-1 relative",
+        "pointer-events-auto translate-y-[-40%] cursor-pointer rounded-full hover:bg-white z-10 hover:z-50 p-1 relative",
         isSelected && "bg-white bg-opacity-80",
         isFirstStopInRoute && "translate-x-[20%] translate-y-[-24%] !p-2",
       )}

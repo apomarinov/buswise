@@ -1,3 +1,4 @@
+import { db } from "app/server/db";
 import { handler } from "app/server/handler";
 import response from "app/server/response";
 import routes from "app/server/routes";
@@ -16,12 +17,10 @@ export default handler(async (req: NextApiRequest, res: NextApiResponse) => {
     );
     const route = await routes.getById(data.routeId);
     await routes.saveHistory(route.id);
-    for (const id of data.busStopIds) {
-      await routes.removeBusStop({
-        routeId: route.id,
-        busStopId: id,
-      });
-    }
+    await db.routeBusStop.deleteMany({
+      where: { routeId: route.id, busStopId: { in: data.busStopIds } },
+    });
+    await routes.recalculateBusStopData(route.id, db);
     response.success(res, route);
     return;
   }
